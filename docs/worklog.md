@@ -280,3 +280,14 @@ AWS_S3_BUCKET=planogram-assets
 - 각 Phase는 순차적으로 진행하되, 독립적인 작업은 병렬 진행 가능
 - Phase 1 완료 후 Phase 2~3 동시 진행 가능 (Backend/Frontend 분리 작업)
 - 상태 표기: [ ] 미시작, [P] 진행중, [X] 완료
+
+---
+
+## 병행 프로젝트 현황
+
+| 프로젝트 | Git 저장소 | 설명 |
+|----------|-----------|------|
+| **Planogram (현재)** | https://github.com/frogmyth/planogram | 매장 VMD 3D 시뮬레이션 |
+| **회의실 시스템** | https://github.com/frogmyth/meeting-room-system | 회의실 예약 시스템 |
+
+> 각 프로젝트는 별도 worklog로 관리
