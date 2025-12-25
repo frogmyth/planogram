@@ -93,8 +93,8 @@ AWS_S3_BUCKET=planogram-assets
 #### Backend 작업
 | 순번 | 작업 항목 | 상태 | 비고 |
 |------|----------|------|------|
-| 1-1 | NestJS 프로젝트 초기 설정 | [ ] | TypeScript 5.x |
-| 1-2 | MySQL 연결 및 TypeORM 설정 | [ ] | MySQL 8.0 |
+| 1-1 | NestJS 프로젝트 초기 설정 | [X] | TypeScript 5.x |
+| 1-2 | MySQL 연결 및 TypeORM 설정 | [X] | MySQL 8.0 |
 | 1-3 | MongoDB 연결 및 Mongoose 설정 | [ ] | MongoDB 7.0 |
 | 1-4 | 사용자 인증 (JWT) 구현 | [ ] | 로그인/회원가입 |
 | 1-5 | 프로젝트 CRUD API | [ ] | |
@@ -103,11 +103,11 @@ AWS_S3_BUCKET=planogram-assets
 #### Frontend 작업
 | 순번 | 작업 항목 | 상태 | 비고 |
 |------|----------|------|------|
-| 1-7 | React + Vite 프로젝트 설정 | [ ] | React 18.x |
-| 1-8 | React Three Fiber 기본 씬 구성 | [ ] | Three.js 0.160+ |
-| 1-9 | 카메라 컨트롤 (OrbitControls) | [ ] | |
-| 1-10 | 기본 조명 설정 | [ ] | |
-| 1-11 | Zustand 상태 관리 설정 | [ ] | Zustand 4.x |
+| 1-7 | React + Vite 프로젝트 설정 | [X] | React 18.x |
+| 1-8 | React Three Fiber 기본 씬 구성 | [X] | Three.js 0.160+ |
+| 1-9 | 카메라 컨트롤 (OrbitControls) | [X] | |
+| 1-10 | 기본 조명 설정 | [X] | |
+| 1-11 | Zustand 상태 관리 설정 | [X] | Zustand 4.x |
 | 1-12 | 로그인/회원가입 페이지 | [ ] | |
 | 1-13 | 대시보드 레이아웃 | [ ] | TailwindCSS |
 
@@ -261,6 +261,13 @@ AWS_S3_BUCKET=planogram-assets
 - Git 저장소 생성 및 연동 완료 (https://github.com/frogmyth/planogram)
 - 개발 환경 확인: Node.js v22.19.0, Python 3.11.2, MySQL 설치됨
 - .gitignore 설정 및 초기 커밋 완료
+- **Phase 1 개발 시작**
+  - Frontend: React + Vite + TypeScript 프로젝트 생성
+  - Frontend: React Three Fiber, Zustand, GSAP, TailwindCSS 설치
+  - Frontend: 기본 3D 씬 구성 (Grid, OrbitControls, 조명)
+  - Backend: NestJS 프로젝트 생성
+  - Backend: TypeORM + MySQL 연결 설정 (planogram DB - 회의실 시스템과 별도)
+  - Backend: JWT 인증 관련 패키지 설치
 
 ---
 
