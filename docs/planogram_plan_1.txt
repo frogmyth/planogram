@@ -1,0 +1,699 @@
+**[개발 계획서] 매장 VMD 3D 시뮬레이션 플랫폼 구축
+1. 프로젝트 개요**
+• **프로젝트명:** Retail-X 3D Builder (가칭)
+• **목표:** 2D 평면도를 기반으로 3D 매장 공간을 자동/반자동으로 생성하고, 다양한 규격의 집기(매대) 배치부터 상품 진열, LCD 디스플레이 시뮬레이션까지 가능한 통합 VMD 솔루션 개발.
+• **핵심 가치:** 매장 오픈/리뉴얼 전 가상 시뮬레이션을 통한 비용 절감, 브랜드별 규격화된 매대 관리, 직관적인 진열 관리.
+**2. 권장 기술 스택 (Tech Stack)**
+웹 기반의 접근성을 고려하여 다음과 같은 스택을 추천합니다.
+• **Frontend (3D Engine):**
+    ◦ **Three.js (React Three Fiber):** 웹 브라우저상에서 별도 설치 없이 3D를 구동하기 위해 필수적입니다.
+    ◦ **WebGL:** 고성능 렌더링 처리.
+• **Backend:** Node.js (Express/NestJS) 또는 Python (Django/FastAPI - *이미지 처리 용이*)
+• **Database:** PostgreSQL (매대 규격, 공간 데이터 등 정형 데이터), MongoDB (상품 정보 등 비정형 데이터)
+• **Algorithm:** OpenCV (도면 이미지 인식 및 벽체/구역 자동 추출)
+**3. 주요 기능 상세 명세
+A. 공간 생성 및 편집 (Space Builder)**
+**1. 2D 도면 기반 3D 생성 (Auto-Layout)**
+• **기능:** 사용자가 업로드한 배치도 이미지(JPG/PNG/CAD)의 라인을 인식하여 벽체와 바닥을 3D로 변환.
+• **구현:** OpenCV를 활용한 윤곽선 검출(Edge Detection). 인식된 구역(Zone)에 라벨링(농산, 수산, 가공 등) 기능 제공.
+• **UX:** 업로드 -> AI 인식 -> 사용자가 벽체 두께/높이 미세 조정 -> 3D 생성 완료.
+**2. 구역(Zone) 편집 및 이동**
+• **기능:** 전체 맵을 '탑뷰(Top-view)'로 조망.
+• **카메라:** 드래그 앤 드롭으로 시점 이동, 마우스 휠로 줌인/아웃.
+• **인터랙션:** 특정 구역(예: 냉동식품 존) 클릭 시 카메라가 부드럽게 해당 구역 상공으로 이동(Camera Tweening 효과).
+**B. 집기(매대) 템플릿 시스템 (Fixture Manager)**
+**3. 브랜드별 규격 관리**
+• **제조사/브랜드 프리셋:** 이마트, 코스트코, CU 등 브랜드별 표준 규격 DB화.
+• **매대 속성:** 너비(W), 높이(H), 깊이(D), 선반 수, 선반 두께, 재질(철제/목재).
+**4. 매대 모델링 엔진**
+• **곤돌라(일반 진열대):** 입력된 수치에 따라 3D 메쉬(Mesh)가 실시간으로 변형되는 파라메트릭 모델링 적용.
+• **평대(오픈형 진열대):** 링크(bwdisplay) 참조, 상단 오픈형 박스 형태. 단/경사도 조절 기능.
+• **엔드캡(End-cap):** 곤돌라 끝단에 부착되는 특수 매대 자동 스냅(Snap) 기능.
+**C. 디테일 뷰 및 상품 진열 (VMD Editor)**
+**5. 매대 줌인 & 정면 뷰 (Frontal View)**
+• **전환 효과:** 탑뷰 상태에서 특정 매대 클릭 시 -> 카메라가 해당 매대 정면으로 줌인 (시점 변환).
+• **매대 식별:** 매대 상단/하단에 고유 ID(예: A-01-05) 및 선반 번호(01, 02...) 자동 표기.
+**6. 주변 매대 고스팅(Ghosting) 처리**
+• **포커스 모드:** 선택된 매대는 `Solid` 렌더링, 양옆의 인접 매대는 `Transparent(투명도 70%)` 처리.
+• **이유:** 시야를 가리지 않으면서도 공간감을 유지하기 위함(참고 이미지 2번과 같은 꽉 찬 화면 구현 시 중요).
+• **내비게이션:** 화면 좌/우 화살표 클릭 시 인접 매대로 포커스 이동 (Slider UX).
+**7. 상품 및 LCD 배치**
+• **LCD 시뮬레이션:** 선반 엣지(Shelf Edge)에 23인치 울트라 와이드 LCD 3D 모델 부착 기능. (영상/이미지 맵핑 가능).
+• **상품 진열:** 실제 상품 DB(가로x세로x높이)를 불러와 선반에 배치. 충돌 방지(Collision Detection) 적용하여 선반 밖으로 튀어나가지 않게 처리.
+• **선반 높이 조절:** 마우스 드래그로 선반 높이 실시간 조절 (구멍 간격에 맞춰 스냅).
+**4. UI/UX 시나리오 (User Flow)**
+1. **Dashboard:** 프로젝트 생성, 브랜드 선택 (예: 이마트 성수점).
+2. **Layout Mode (Top View):**
+    ◦ 배치도 이미지 업로드.
+    ◦ 벽체 생성 및 구역(Zone) 설정.
+    ◦ 매대 템플릿(곤돌라/평대)을 라이브러리에서 드래그하여 배치.
+    ◦ 매대 ID 자동 부여.
+3. **VMD Mode (Frontal View):**
+    ◦ 특정 매대 더블 클릭.
+    ◦ 카메라가 매대 정면으로 줌인.
+    ◦ 주변 매대 반투명화.
+    ◦ 선반 높이 조절 및 LCD 장착.
+    ◦ 우측 패널에서 상품 검색 후 드래그하여 진열.
+4. **Review:** 3D 공간 전체를 둘러보며 동선 확인.
+**5. 개발 단계별 로드맵 (Milestones)단계기간주요 목표상세 내용**
+
+**Phase 1**1~2개월**Core & Space**웹 3D 뷰어 구축, 이미지 업로드 및 평면 3D 변환, 기본 카메라 컨트롤
+
+**Phase 2**2~3개월**Fixture Engine**매대 템플릿 시스템(곤돌라/평대), 파라메트릭 사이즈 조절, 매대 배치/이동/삭제
+
+**Phase 3**2~3개월**VMD Logic**매대 정면 줌인 효과, 고스팅(투명) 처리, 선반 높이 조절, 좌우 이동 내비게이션
+
+**Phase 4**1~2개월**Items & LCD**상품 데이터 연동 및 배치, LCD 모델링 및 텍스처 매핑, 최종 최적화
+**6. 개발 시 고려사항 (Challenge & Solution)**
+1. **도면 인식 정확도:**
+    ◦ *문제:* 손으로 그린 도면이나 저해상도 이미지는 자동 인식이 어려움.
+    ◦ *해결:* '자동 인식' 후 사용자가 점(Vertex)을 수정할 수 있는 '벡터 편집기' 기능을 반드시 포함해야 함.
+2. **대용량 처리 퍼포먼스:**
+    ◦ *문제:* 대형 마트의 경우 수천 개의 상품과 매대 렌더링 시 웹 브라우저가 느려질 수 있음.
+    ◦ *해결:*
+        ▪ **LOD (Level of Detail):** 멀리 있는 상품은 단순한 박스로, 가까이 있는 상품만 고해상도로 렌더링.
+        ▪ **Instanced Mesh:** 동일한 모양의 매대나 상품은 메모리를 공유하여 렌더링 부하 최소화.
+3. **다양한 매대 규격 대응:**
+    ◦ *해결:* 하드코딩하지 않고, JSON 형태의 설정 파일로 매대 규격을 정의하여, 개발자 없이도 새로운 규격(템플릿)을 추가할 수 있는 관리자 페이지 구축.
+
+# 1. 매대 템플릿 데이터 구조 (JSON Schema)
+
+매장마다(이마트, CU 등) 제각각인 규격을 유연하게 처리하기 위해 **`Fixture Template` (매대 원형)**과 **`Fixture Instance` (실제 배치된 매대)**를 구분해야 합니다.
+
+아래는 **'6. 일반 진열대(곤돌라)'**와 **'10. LCD 및 선반 설정'** 요구사항을 반영한 템플릿 JSON 예시입니다.
+
+### 📌 A. 매대 템플릿 (Fixture Template) JSON
+
+*개발자가 DB에 '매대 규격'을 정의할 때 사용하는 구조입니다.*
+
+JSON
+
+`{
+  "template_id": "EMT_GONDOLA_STD_01",
+  "name": "이마트 표준 곤돌라 (하이퍼)",
+  "category": "GONDOLA", // GONDOLA(일반), FLAT(평대), ENDCAP(엔드캡)
+  "retailer_type": "EMART", // EMART, COSTCO, CU, GS25...
+  
+  "dimensions": {
+    "width": 900,   // 단위: mm
+    "height": 1800,
+    "depth": 450
+  },
+
+  "structure_config": {
+    "base_deck_height": 150, // 바닥 걸레받이 높이
+    "default_shelf_count": 5, // 기본 선반 수 (조절 가능)
+    "post_interval": 25,     // 선반 높이 조절 간격 (구멍 간격, 25mm)
+    "material": "STEEL_POWDER_COATED",
+    "color_hex": "#FFFFFF"
+  },
+
+  "addons": {
+    "lcd_display": {
+      "supported": true,
+      "default_model": "ULTRA_WIDE_23_INCH",
+      "position": "SHELF_EDGE" // 선반 앞단(Edge)에 부착
+    },
+    "header_pop": true // 매대 최상단 홍보물 부착 가능 여부
+  }
+}`
+
+### 📌 B. 배치된 매대 데이터 (Fixture Instance) JSON
+
+*사용자가 실제로 매장에 배치하고 선반 높이를 조절했을 때 저장되는 데이터입니다.*
+
+JSON
+
+`{
+  "instance_id": "ZONE_A_04_12", // 고유 ID (매대 번호)
+  "template_ref": "EMT_GONDOLA_STD_01", // 위 템플릿 참조
+  "position": { "x": 1200, "y": 0, "z": 3500 }, // 3D 공간 좌표
+  "rotation": 90, // 회전 각도
+
+  "shelf_configuration": [
+    {
+      "shelf_index": 1, // 1단 (가장 아래)
+      "elevation": 200, // 바닥으로부터의 높이 (mm)
+      "has_lcd": false,
+      "products": [] // 진열된 상품 리스트
+    },
+    {
+      "shelf_index": 2, // 2단 (골든존 시작)
+      "elevation": 600,
+      "has_lcd": true, // LCD 설치됨
+      "lcd_content_url": "https://cdn.../promo_video.mp4",
+      "products": [
+        { "sku_id": "88012345", "pos_x": 50, "facing_count": 3 }
+      ]
+    },
+    {
+      "shelf_index": 3,
+      "elevation": 1000,
+      "has_lcd": true,
+      "products": [...]
+    }
+  ]
+}`
+
+---
+
+# 2. 핵심 기능 UI 와이어프레임 (Draft)
+
+요구사항에 맞춰 크게 **① 전체 레이아웃 편집(탑뷰)**와 **② 상세 진열 편집(정면 뷰)** 두 가지 핵심 화면으로 구성됩니다.
+
+### 화면 1: 매장 레이아웃 빌더 (Top View)
+
+**목표:** 도면 이미지를 깔고, 벽체를 세우고, 매대를 '배치'하는 화면.
+
+- **좌측 패널 (Library):**
+    - **탭 구분:** [구조물(벽/기둥)] | [매대 템플릿] | [설비(냉장고)]
+    - **매대 리스트:** 이마트형, 편의점형 등 브랜드 선택 후 드래그 앤 드롭.
+- **중앙 캔버스 (Workspace):**
+    - 업로드한 도면 이미지가 반투명하게 바닥에 깔려있음.
+    - 마우스로 드래그하여 구역(Zone) 설정 (파란색 점선 사각형).
+    - 생성된 매대는 위에서 본 직사각형 형태(■)로 표시.
+    - **상호작용:** 특정 매대 그룹(구역)을 더블 클릭하면 → **화면 2로 줌인(Zoom-in) 전환.**
+- **우측 패널 (Properties):**
+    - 선택한 매대의 `가로/세로/높이` 수치 입력 필드 (파라메트릭 수정).
+    - '삭제', '복제', '회전' 버튼.
+
+---
+
+### 화면 2: VMD 진열 에디터 (Frontal View)
+
+**목표:** 특정 매대 앞에서 실제 상품을 진열하고 LCD를 다는 화면 (요구사항 9, 11, 12번 집중).
+
+- **중앙 뷰포트 (3D View):**
+    - **Main Target:** 선택한 매대가 화면 중앙에 꽉 차게 렌더링 (Solid).
+    - **Ghosting:** 좌/우에 인접한 매대는 **반투명(Opacity 30%)** 처리하여 공간감만 제공.
+    - **Overlay:** 매대 상단에 `[ A-01 ]` 태그 표시, 각 선반마다 `[ 01 ]`, `[ 02 ]` 번호표 부착.
+    - **Navigation:** 화면 양 끝에 `<` (이전 매대), `>` (다음 매대) 화살표 버튼 (슬라이더 UX).
+- **하단 컨트롤 바 (Shelf Control):**
+    - **선반 높이:** 선택한 선반을 위아래로 드래그하면 높이 수치(mm)가 실시간 표시.
+    - **옵션:** [LCD 추가] 토글 버튼, [선반 추가/삭제] 버튼.
+- **우측 패널 (Product Palette):**
+    - **상품 검색:** "신라면", "코카콜라" 검색 창.
+    - **상품 목록:** 썸네일과 실제 사이즈(W/H/D) 표시.
+    - **Action:** 상품을 드래그하여 중앙 매대 선반에 놓으면 '착' 하고 달라붙음 (Snap to grid).
+
+---
+
+### 3. 개발 팁: 기술적 구현 포인트
+
+1. **카메라 트위닝 (Camera Tweening):**
+    - 탑뷰(Orthographic Camera)에서 정면뷰(Perspective Camera)로 전환될 때, 뚝 끊기지 않고 부드럽게 날아가는 애니메이션 처리를 위해 `GSAP`이나 `TWEEN.js` 라이브러리를 Three.js와 함께 사용해야 합니다.
+2. **투명 처리 (Ghosting Material):**
+    - 주변 매대를 렌더링할 때, 원본 매쉬(Mesh)를 복제하되 Material만 `MeshStandardMaterial { transparent: true, opacity: 0.3 }`으로 교체하여 렌더링 부하를 줄이고 시각적 집중도를 높여야 합니다.
+3. **드래그 앤 드롭 (Raycasting):**
+    - 2D 화면(마우스) 좌표를 3D 공간 좌표로 변환하는 `Raycaster` 기능을 사용하여, 상품을 드래그했을 때 정확히 선반 '위'에 안착되도록 충돌 박스(Bounding Box) 계산이 필수입니다.
+
+# 1. 상품(Product) 데이터베이스 필수 항목 정의서
+
+3D 진열 시뮬레이션의 핵심은 상품을 **'현실적인 크기'**로 렌더링하고, 선반 용량에 맞춰 **'적재 가능 여부'**를 판단하는 것입니다. 따라서 일반 쇼핑몰 DB보다 **물리적 속성(Physical Specs)**이 매우 중요합니다.
+
+### 📌 상품 데이터 모델 (JSON Schema 예시)
+
+JSON
+
+`{
+  "product_id": "P_8801043014856",  // 내부 관리 코드
+  "barcode": "8801043014856",       // EAN-13/GTIN (스캔 연동용)
+  "sku_name": "농심 신라면 멀티팩 (5입)",
+  "brand": "농심",
+  "category_id": "CAT_INSTANT_NOODLE",
+
+  // [중요] 3D 렌더링 및 진열 계산을 위한 물리적 속성
+  "dimensions": {
+    "width": 160,   // 가로 (mm) - 정면에서 봤을 때
+    "height": 130,  // 높이 (mm)
+    "depth": 120,   // 깊이 (mm)
+    "weight_g": 600 // 무게 (g) - 선반 하중 계산용
+  },
+
+  // [중요] 텍스처 및 모델링 데이터
+  "assets": {
+    // 3D 박스에 맵핑할 텍스처 (정면, 윗면, 옆면 등)
+    "texture_front_url": "https://cdn.../shin_ramyun_front.jpg",
+    "texture_top_url": "https://cdn.../shin_ramyun_top.jpg",
+    "texture_side_url": "https://cdn.../shin_ramyun_side.jpg",
+    
+    // 고퀄리티 렌더링이 필요한 경우 GLB 파일 (선택 사항)
+    "model_glb_url": null, 
+    
+    // UI 목록에 보여줄 썸네일
+    "thumbnail_url": "https://cdn.../shin_ramyun_thumb.png"
+  },
+
+  // 진열 규칙 (VMD Rules)
+  "merchandising_rules": {
+    "stacking_limit": 5,      // 최대 5단까지만 적재 가능
+    "orientation_allowed": ["FRONT", "SIDE"], // 정면, 측면 진열 허용
+    "is_refrigerated": false  // 냉장 필요 여부 (냉동고 배치 제한용)
+  },
+
+  "price_info": {
+    "retail_price": 4350,
+    "currency": "KRW"
+  }
+}`
+
+### 💡 개발 팁: 텍스처 처리 전략
+
+- **Low Poly(저사양) 전략:** 모든 상품을 3D 모델(GLB)로 만들면 웹이 느려집니다. 기본적으로는 `BoxGeometry`(단순 상자)를 생성하고, `texture_front_url` 이미지를 정면에 맵핑(Texture Mapping)하는 방식을 기본으로 사용하세요. 이것이 수천 개의 상품을 렌더링하는 비결입니다.
+
+---
+
+# 2. React 컴포넌트 구조도 (Frontend Architecture)
+
+이 프로젝트는 일반 웹 UI(DOM)와 3D 캔버스(Canvas)가 공존해야 합니다. **React Three Fiber (R3F)**를 기반으로 한 컴포넌트 구조를 제안합니다.
+
+### 📂 디렉토리 및 컴포넌트 트리 구조
+
+Plaintext
+
+`src/
+├── components/
+│   ├── layout/               # 일반 UI 레이아웃
+│   │   ├── Header.tsx
+│   │   ├── SidebarLibrary.tsx  # 매대/상품 드래그 소스
+│   │   └── InspectorPanel.tsx  # 속성 편집창 (우측 패널)
+│   │
+│   ├── 3d/                   # 3D 관련 컴포넌트 (R3F)
+│   │   ├── SceneContainer.tsx  # <Canvas> 래퍼 (조명, 물리엔진 설정)
+│   │   ├── CameraController.tsx # OrbitControls 및 시점 변환 로직
+│   │   │
+│   │   ├── floor/
+│   │   │   └── ZoneFloor.tsx   # 바닥 및 구역(Zone) 렌더링
+│   │   │
+│   │   ├── fixtures/           # 매대 컴포넌트
+│   │   │   ├── FixtureGroup.tsx # 매대 1개의 전체 그룹
+│   │   │   ├── GondolaMesh.tsx  # 곤돌라 철제 프레임 (파라메트릭)
+│   │   │   ├── ShelfBoard.tsx   # 선반 판 + LCD 모델 포함
+│   │   │   └── GhostFixture.tsx # 주변 반투명 매대
+│   │   │
+│   │   └── products/
+│   │       └── ProductItem.tsx  # 개별 상품 (Box + Texture)
+│   │
+│   └── common/               # 공통 컴포넌트
+│       ├── DragOverlay.tsx     # 드래그 시 마우스 따라다니는 이미지
+│       └── ContextMenu.tsx
+│
+├── pages/
+│   ├── SpaceBuilderPage.tsx  # (기능1) 2D 도면 -> 3D 벽체/구역 생성
+│   └── VMDEditorPage.tsx     # (기능2) 매대 진열 편집
+│
+├── store/                    # 상태 관리 (Zustand/Recoil 추천)
+│   ├── useSpaceStore.ts      # 전체 맵 데이터
+│   ├── useFixtureStore.ts    # 매대 위치 및 설정
+│   └── useSelectionStore.ts  # 현재 선택된 매대/상품 ID
+│
+└── hooks/
+    ├── useRaycaster.ts       # 마우스 위치의 3D 좌표 계산
+    └── useCameraTween.ts     # 탑뷰 <-> 정면뷰 카메라 애니메이션`
+
+### 🔑 핵심 컴포넌트 상세 설명
+
+**1. `SceneContainer.tsx` (캔버스 진입점)**
+
+- Three.js의 `<Canvas>`를 선언하는 곳입니다.
+- 조명(AmbientLight, DirectionalLight)을 설정하고, `Perf`(퍼포먼스 모니터) 등을 배치합니다.
+- UI와 3D 캔버스는 형제(Sibling) 관계로 배치하여, UI가 3D 위에 `z-index`로 올라오게 CSS 처리합니다.
+
+**2. `FixtureGroup.tsx` (매대 1개 단위)**
+
+- 이 컴포넌트는 `position`, `rotation`, `dimensions` props를 받습니다.
+- 내부에 `GondolaMesh`(프레임)와 여러 개의 `ShelfBoard`(선반)를 자식으로 가집니다.
+- **중요:** 이 컴포넌트에 `onClick` 이벤트를 달아 카메라 줌인 효과를 트리거합니다.
+
+**3. `ProductItem.tsx` (상품)**
+
+- `BoxGeometry`를 사용하며, props로 받은 `width`, `height`, `depth`를 적용합니다.
+- **InstancedMesh 적용:** 만약 '신라면'이 100개라면, 100개의 객체를 만들지 않고 `InstancedMesh`를 사용하여 GPU 부하를 1/100로 줄여야 합니다. (대량 진열 시 필수 최적화 포인트)
+
+**4. 상태 관리 (`store/`)**
+
+- **Zustand** 사용을 강력 추천합니다. 3D 렌더링 루프 밖에서 상태를 변경하고, 이를 3D 컴포넌트가 구독하는 형태가 가장 효율적입니다.
+- 예: `selectedFixtureId`가 바뀌면, `CameraController`가 이를 감지하여 해당 위치로 `gsap.to()` 애니메이션을 실행합니다.
+
+# 🛠️ 핵심 로직: Raycasting & Grid Snap
+
+### 1. 알고리즘 개념도
+
+구현의 핵심은 **2D 화면의 마우스 좌표**를 **3D 월드 좌표**로 변환한 뒤, 이를 선반의 **로컬 좌표계**로 환산하여 격자(Grid) 계산을 수행하는 것입니다.
+
+1. **Raycasting (광선 투사):** 카메라에서 마우스 위치로 보이지 않는 레이저(Ray)를 쏩니다.
+2. **Intersection (충돌 감지):** 레이저가 '선반 바닥면(Target Plane)'과 부딪힌 지점 $(x, y, z)$를 찾습니다.
+3. **Local Conversion (좌표 변환):** 선반이 회전해 있을 수 있으므로, 부딪힌 월드 좌표를 선반 기준의 로컬 좌표로 변환합니다.
+4. **Grid Snap (스냅 연산):** 좌표를 상품 폭이나 지정된 단위(예: 5cm)로 나누어 반올림합니다.
+
+---
+
+### 2. Grid Snap 수학 공식 (Math Logic)
+
+스냅 로직은 매우 간단한 수학 공식으로 이루어집니다.
+
+$$Position_{snapped} = \text{round}\left( \frac{Position_{raw}}{GridSize} \right) \times GridSize$$
+
+- **$Position_{raw}$**: 레이캐스팅으로 얻은 날것의 좌표 (예: 123.456)
+- **$GridSize$**: 스냅 단위 (예: 50mm)
+- **결과**: 123.456 → 100 또는 150으로 보정됨.
+
+---
+
+### 3. 구현 코드 (React Three Fiber + Three.js)
+
+아래 코드는 **'선반 컴포넌트(`ShelfBoard`)'** 위에서 마우스가 움직일 때, **'임시 상품(Ghost Item)'**이 마우스를 따라다니며 스냅되는 로직입니다.
+
+TypeScript
+
+`import React, { useState, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+
+// 설정값: 1칸의 크기 (mm 단위, Three.js에서는 보통 1unit = 1m 또는 1cm로 씀. 여기선 1 = 1mm 가정)
+const SNAP_GRID_X = 50; // 가로 5cm 간격
+const SNAP_GRID_Z = 50; // 깊이 5cm 간격
+
+const ShelfBoard = ({ width, depth, position }) => {
+  // 1. 상태 관리: 현재 마우스가 가리키는 스냅 위치
+  const [ghostPosition, setGhostPosition] = useState(null);
+  
+  // 2. 선반의 Mesh 참조 (로컬 좌표 변환용)
+  const shelfRef = useRef();
+
+  // 3. 마우스 이동 이벤트 핸들러 (Core Logic)
+  const handlePointerMove = (e) => {
+    // 이벤트 버블링 방지 (뒤에 있는 다른 물체가 선택되지 않도록)
+    e.stopPropagation();
+
+    // A. Raycasting 결과물인 'point' (월드 좌표)를 가져옵니다.
+    const worldPoint = e.point;
+
+    // B. 월드 좌표를 선반의 '로컬 좌표'로 변환합니다.
+    // (선반이 회전되어 있거나 다른 위치에 있어도 정확히 계산하기 위함)
+    const localPoint = shelfRef.current.worldToLocal(worldPoint.clone());
+
+    // C. Grid Snap 공식 적용
+    const snappedX = Math.round(localPoint.x / SNAP_GRID_X) * SNAP_GRID_X;
+    const snappedZ = Math.round(localPoint.z / SNAP_GRID_Z) * SNAP_GRID_Z;
+
+    // D. 경계 처리 (선반 밖으로 나가지 않게 Clamp)
+    // 선반 중심이 (0,0)이므로 범위는 -width/2 ~ +width/2
+    const clampedX = THREE.MathUtils.clamp(snappedX, -width / 2, width / 2);
+    const clampedZ = THREE.MathUtils.clamp(snappedZ, -depth / 2, depth / 2);
+
+    // E. 높이(Y)는 상품 높이의 절반만큼 띄워줍니다 (상품 중심점이 바닥에 박히지 않게)
+    const productHeight = 130; 
+    const snappedY = productHeight / 2; 
+
+    setGhostPosition([clampedX, snappedY, clampedZ]);
+  };
+
+  const handlePointerOut = () => {
+    setGhostPosition(null); // 마우스가 선반을 벗어나면 고스트 숨김
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (ghostPosition) {
+       console.log("상품 배치 확정 좌표:", ghostPosition);
+       // TODO: 여기에 실제 상품을 리스트에 추가하는 Redux/Zustand 액션 호출
+    }
+  };
+
+  return (
+    <group position={position}>
+      {/* 1. 실제 선반 바닥 Mesh (Raycasting 타겟) */}
+      <mesh 
+        ref={shelfRef} 
+        rotation={[-Math.PI / 2, 0, 0]} // 눕혀진 평면
+        onPointerMove={handlePointerMove}
+        onPointerOut={handlePointerOut}
+        onClick={handleClick}
+      >
+        <planeGeometry args={[width, depth]} />
+        <meshStandardMaterial color="#dddddd" />
+      </mesh>
+
+      {/* 2. 고스트 아이템 (마우스 따라다니는 반투명 박스) */}
+      {ghostPosition && (
+        <mesh position={ghostPosition}>
+          <boxGeometry args={[160, 130, 120]} /> {/* 신라면 사이즈 */}
+          <meshBasicMaterial color="lime" wireframe opacity={0.5} transparent />
+        </mesh>
+      )}
+    </group>
+  );
+};
+
+export default ShelfBoard;`
+
+---
+
+### 4. 고급 기능: 충돌 방지 (Collision Detection)
+
+단순히 스냅만 하면 기존에 놓여 있는 상품과 겹칠 수 있습니다. 이를 방지하기 위한 추가 로직입니다.
+
+개념:
+
+배치하려는 위치(candidateRect)와 이미 배치된 상품들(placedItems)의 영역이 겹치는지 확인합니다. 2D 게임의 사각형 충돌(AABB) 로직을 활용합니다.
+
+**코드 스니펫 (함수형 로직):**
+
+JavaScript
+
+`const checkCollision = (newPos, newSize, existingItems) => {
+  // 1. 새로운 아이템의 영역 계산 (Box)
+  const newBox = new THREE.Box3();
+  newBox.setFromCenterAndSize(
+    new THREE.Vector3(...newPos), 
+    new THREE.Vector3(...newSize)
+  );
+
+  // 2. 기존 아이템들과 하나씩 비교
+  for (let item of existingItems) {
+    const itemBox = new THREE.Box3();
+    itemBox.setFromCenterAndSize(
+      new THREE.Vector3(...item.pos), 
+      new THREE.Vector3(...item.size)
+    );
+
+    // 3. 교차(Intersect) 여부 확인
+    if (newBox.intersectsBox(itemBox)) {
+      return true; // 충돌 발생!
+    }
+  }
+  return false; // 배치 가능
+};`
+
+- **적용:** 위 `handlePointerMove` 내부에서 `checkCollision`이 `true`가 되면 고스트 아이템의 색상을 **빨간색(Red)**으로 변경하여 사용자에게 "여기는 놓을 수 없습니다"라는 시각적 피드백을 줍니다.
+
+---
+
+### 개발자를 위한 요약 (Summary)
+
+1. **이벤트:** `onPointerMove`를 선반(Floor)에 걸어서 사용합니다.
+2. **좌표계:** `event.point`(월드)를 `shelf.worldToLocal()`로 변환하는 것이 핵심입니다. (이걸 안 하면 선반 이동 시 좌표가 다 틀어집니다).
+3. **스냅:** `Math.round(val / grid) * grid` 공식 하나면 끝납니다.
+4. **피드백:** 실제 데이터를 업데이트하기 전에 `Ghost Mesh`(반투명 가이드)를 먼저 보여주세요.
+
+이 로직을 사용하면 사용자가 마우스를 대충 움직여도 상품이 "착, 착" 하고 열을 맞춰 정렬되는 쾌적한 UX를 구현할 수 있습니다.
+
+- *React Three Fiber(R3F)**와 애니메이션 라이브러리의 표준인 **GSAP(GreenSock)**을 사용하여 구현하는 것이 가장 부드럽고 안정적입니다.
+
+이 코드의 핵심은 단순히 카메라 위치만 옮기는 것이 아니라, **OrbitControls의 `target`(바라보는 지점)**도 함께 애니메이션 처리해야 한다는 점입니다. 그래야 카메라가 이동하면서 자연스럽게 매대를 바라보게 됩니다.
+
+---
+
+### 🛠️ 필수 설치 라이브러리
+
+Bash
+
+`npm install gsap @react-three/drei`
+
+---
+
+### 1. CameraController 컴포넌트 (핵심 로직)
+
+이 컴포넌트는 `Canvas` 안에 배치되어, 상태(`viewMode`)가 바뀔 때마다 카메라를 납치(?)하여 부드럽게 이동시킵니다.
+
+TypeScript
+
+`import React, { useEffect } from 'react';
+import { useThree } from '@react-three/fiber';
+import gsap from 'gsap';
+import * as THREE from 'three';
+
+// props 타입 정의 (TS 사용 시)
+// viewMode: 'TOP' | 'FRONT'
+// focusTarget: 이동할 매대의 좌표 [x, y, z] 또는 Vector3
+// controlsRef: OrbitControls의 ref 객체
+const CameraController = ({ viewMode, focusTarget, controlsRef }) => {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (!controlsRef.current) return;
+
+    // 애니메이션 설정값
+    const duration = 1.5; // 1.5초 동안 이동
+    const ease = "power3.inOut"; // 부드러운 가속/감속
+
+    // ---------------------------------------------
+    // Case A: 탑뷰 (전체 조망) 모드로 전환
+    // ---------------------------------------------
+    if (viewMode === 'TOP') {
+      // 1. 카메라 위치: 하늘 위로 이동
+      gsap.to(camera.position, {
+        x: 0,
+        y: 1500, // 높이 15m (단위 mm 기준이면 15000 등 조정)
+        z: 0,
+        duration: duration,
+        ease: ease,
+      });
+
+      // 2. 바라보는 곳(Target): 맵의 중앙(0,0,0)으로 초기화
+      gsap.to(controlsRef.current.target, {
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: duration,
+        ease: ease,
+        onUpdate: () => controlsRef.current.update(), // 프레임마다 컨트롤 업데이트 필수
+      });
+    } 
+    
+    // ---------------------------------------------
+    // Case B: 정면 뷰 (특정 매대) 모드로 전환
+    // ---------------------------------------------
+    else if (viewMode === 'FRONT' && focusTarget) {
+      const targetVec = new THREE.Vector3(...focusTarget);
+      
+      // 1. 카메라가 도착할 위치 계산 (매대 앞)
+      // 매대 중심(targetVec)에서 Z축으로 약간 뒤(+200), Y축으로 눈높이(+160) 만큼 떨어짐
+      const cameraOffset = { x: 0, y: 160, z: 250 }; 
+      
+      // 만약 매대가 회전해 있다면 offset 계산이 복잡해지지만, 
+      // 여기서는 기본적으로 Z축 정면 이동을 가정합니다.
+      
+      gsap.to(camera.position, {
+        x: targetVec.x + cameraOffset.x,
+        y: targetVec.y + cameraOffset.y,
+        z: targetVec.z + cameraOffset.z, // 매대 앞으로 이동
+        duration: duration,
+        ease: ease,
+      });
+
+      // 2. 바라보는 곳(Target): 선택한 매대의 중심
+      gsap.to(controlsRef.current.target, {
+        x: targetVec.x,
+        y: targetVec.y + 100, // 매대 바닥보다는 약간 위(선반 쪽)를 바라보게
+        z: targetVec.z,
+        duration: duration,
+        ease: ease,
+        onUpdate: () => controlsRef.current.update(),
+      });
+    }
+  }, [viewMode, focusTarget, camera, controlsRef]);
+
+  return null; // 화면에 렌더링할 요소는 없음 (로직만 수행)
+};
+
+export default CameraController;`
+
+---
+
+### 2. 메인 Scene 적용 예시
+
+실제 `Canvas` 안에서 이 컨트롤러를 어떻게 사용하는지 보여주는 전체 구조입니다.
+
+TypeScript
+
+`import React, { useState, useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Grid } from '@react-three/drei';
+import CameraController from './CameraController'; // 위에서 만든 컴포넌트
+import ShelfBoard from './ShelfBoard'; // 이전에 만든 매대 컴포넌트
+
+const App = () => {
+  // 상태 관리
+  const [viewMode, setViewMode] = useState('TOP'); // 'TOP' or 'FRONT'
+  const [targetPos, setTargetPos] = useState(null); // [x, y, z]
+  const controlsRef = useRef();
+
+  // 매대 클릭 핸들러
+  const handleFixtureClick = (position) => {
+    setTargetPos(position);
+    setViewMode('FRONT'); // 뷰 모드 변경 -> 애니메이션 트리거
+  };
+
+  // 배경 클릭 시 다시 탑뷰로 복귀
+  const handleBackgroundClick = () => {
+    setViewMode('TOP');
+    setTargetPos(null);
+  };
+
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      {/* UI 버튼 (테스트용) */}
+      <div style={{ position: 'absolute', zIndex: 10, padding: 20 }}>
+        <button onClick={() => setViewMode('TOP')}>Reset to Top View</button>
+      </div>
+
+      <Canvas camera={{ position: [0, 1500, 0], fov: 45 }}>
+        {/* 1. 조명 설정 */}
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[100, 100, 50]} intensity={1} />
+
+        {/* 2. 카메라 & 컨트롤 로직 연결 */}
+        <OrbitControls ref={controlsRef} makeDefault />
+        <CameraController 
+          viewMode={viewMode} 
+          focusTarget={targetPos} 
+          controlsRef={controlsRef} 
+        />
+
+        {/* 3. 3D 공간 콘텐츠 */}
+        <group>
+          {/* 바닥 (클릭 시 탑뷰 복귀) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} onPointerMissed={handleBackgroundClick}>
+            <planeGeometry args={[5000, 5000]} />
+            <meshStandardMaterial color="#f0f0f0" />
+          </mesh>
+          <Grid args={[5000, 5000]} sectionSize={100} cellColor="#cccccc" />
+
+          {/* 테스트용 매대 배치 */}
+          <mesh 
+            position={[0, 0, 0]} 
+            onClick={(e) => { e.stopPropagation(); handleFixtureClick([0, 0, 0]); }}
+          >
+            <boxGeometry args={[100, 180, 50]} />
+            <meshStandardMaterial color="orange" />
+          </mesh>
+
+           <mesh 
+            position={[300, 0, -200]} 
+            onClick={(e) => { e.stopPropagation(); handleFixtureClick([300, 0, -200]); }}
+          >
+            <boxGeometry args={[100, 180, 50]} />
+            <meshStandardMaterial color="blue" />
+          </mesh>
+        </group>
+      </Canvas>
+    </div>
+  );
+};
+
+export default App;`
+
+---
+
+### 💡 구현 포인트 및 팁
+
+1. **`gsap.to(camera.position)` vs `controls.target`**:
+    - 초보자들이 가장 많이 실수하는 부분입니다. 카메라 위치만 옮기면 OrbitControls가 보고 있는 중심점(Target)은 그대로라서, 카메라가 이동하다가 휙 돌아가 버립니다.
+    - 반드시 **`controls.target`도 같이 매대 쪽으로 옮겨줘야** 자연스럽게 줌인되는 효과가 납니다.
+2. **`onUpdate: () => controlsRef.current.update()`**:
+    - Three.js의 OrbitControls는 내부적으로 상태를 가지고 있습니다. GSAP이 값을 강제로 바꿔도 `update()`를 호출해주지 않으면 화면이 튀거나 먹통이 될 수 있습니다. 애니메이션 프레임마다 업데이트를 호출해주는 것이 안전합니다.
+3. **좌표 오프셋 (`cameraOffset`)**:
+    - 매대 위치가 `(100, 0, 0)`일 때 카메라도 `(100, 0, 0)`으로 가면 매대 속으로 들어가 버립니다.
+    - 그래서 `z: +250` (뒤로 물러남), `y: +160` (사람 눈높이) 같은 **오프셋(Offset)** 값을 더해주는 것입니다.
