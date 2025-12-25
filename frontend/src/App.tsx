@@ -7,12 +7,13 @@ import { GondolaMesh } from './components/3d/fixtures/GondolaMesh'
 import { CameraController } from './components/3d/CameraController'
 import { ViewControls } from './components/ui/ViewControls'
 import { VMDControls } from './components/ui/VMDControls'
+import { NavigationBreadcrumb } from './components/ui/NavigationBreadcrumb'
 import { useUIStore, useSceneStore } from './store'
-import type { FixtureInstance } from './store/useSceneStore'
+import type { FixtureInstance, Zone } from './store/useSceneStore'
 import './App.css'
 
 // 샘플 매장 구역 데이터
-const sampleZones = [
+const sampleZones: Zone[] = [
   { id: 'zone-1', name: '농산', color: '#86efac', bounds: { minX: 0, minZ: 0, maxX: 6, maxZ: 5 } },
   { id: 'zone-2', name: '정육', color: '#fca5a5', bounds: { minX: 6, minZ: 0, maxX: 10, maxZ: 5 } },
   { id: 'zone-3', name: '수산', color: '#93c5fd', bounds: { minX: 10, minZ: 0, maxX: 15, maxZ: 5 } },
@@ -44,8 +45,41 @@ const sampleFixtures: FixtureInstance[] = [
 
 function Scene() {
   const { viewMode } = useUIStore()
-  const { fixtures, selectedFixtureId, isVMDMode, enterVMDMode, setSelectedFixture } = useSceneStore()
+  const {
+    fixtures,
+    zones,
+    selectedFixtureId,
+    selectedZoneId,
+    navigationLevel,
+    isVMDMode,
+    enterZoneView,
+    setSelectedFixture,
+    enterVMDMode,
+    getAdjacentFixtures,
+  } = useSceneStore()
+
   const isTopView = viewMode === 'TOP'
+  const isStoreLevel = navigationLevel === 'store'
+  const isZoneLevel = navigationLevel === 'zone'
+  const isFixtureLevel = navigationLevel === 'fixture'
+
+  // 현재 레벨에 따라 표시할 매대 결정
+  const visibleFixtures = isStoreLevel
+    ? [] // 매장 레벨에서는 매대 숨김
+    : isZoneLevel
+    ? fixtures.filter((f) => f.zoneId === selectedZoneId)
+    : isFixtureLevel
+    ? (() => {
+        // VMD 모드: 선택된 매대 + 좌우 인접 매대
+        const adjacents = getAdjacentFixtures(selectedFixtureId || '')
+        const result = []
+        if (adjacents.prev) result.push(adjacents.prev)
+        const current = fixtures.find((f) => f.id === selectedFixtureId)
+        if (current) result.push(current)
+        if (adjacents.next) result.push(adjacents.next)
+        return result
+      })()
+    : fixtures
 
   return (
     <>
@@ -62,22 +96,37 @@ function Scene() {
 
       {/* 구역 렌더링 */}
       <ZoneRenderer
-        zones={sampleZones}
-        showLabels={!isVMDMode}
-        opacity={isVMDMode ? 0.1 : isTopView ? 0.6 : 0.4}
+        zones={zones}
+        showLabels={isStoreLevel || isZoneLevel}
+        opacity={
+          isFixtureLevel
+            ? 0.1
+            : isZoneLevel
+            ? 0.5
+            : isTopView
+            ? 0.6
+            : 0.4
+        }
+        selectedZoneId={selectedZoneId}
+        onZoneClick={(zoneId) => {
+          if (isStoreLevel) {
+            enterZoneView(zoneId)
+          }
+        }}
+        interactive={isStoreLevel}
       />
 
       {/* 벽체 렌더링 */}
       <WallRenderer
-        walls={sampleWalls.map(w => ({
+        walls={sampleWalls.map((w) => ({
           ...w,
-          height: isVMDMode ? 0.1 : isTopView ? 0.2 : 3
+          height: isFixtureLevel ? 0.1 : isTopView ? 0.2 : 3,
         }))}
         color="#e5e7eb"
       />
 
       {/* 매대 렌더링 */}
-      {fixtures.map((fixture) => (
+      {visibleFixtures.map((fixture) => (
         <GondolaMesh
           key={fixture.id}
           id={fixture.id}
@@ -89,10 +138,12 @@ function Scene() {
           depth={fixture.depth}
           shelfCount={fixture.shelfCount}
           isSelected={selectedFixtureId === fixture.id}
-          isGhosted={isVMDMode && selectedFixtureId !== fixture.id}
+          isGhosted={isFixtureLevel && selectedFixtureId !== fixture.id}
           onClick={() => {
-            if (isVMDMode) return
-            setSelectedFixture(fixture.id)
+            if (isFixtureLevel) return
+            if (isZoneLevel) {
+              setSelectedFixture(fixture.id)
+            }
           }}
         />
       ))}
@@ -110,24 +161,30 @@ function App() {
   const { viewMode } = useUIStore()
   const {
     fixtures,
+    zones,
     setFixtures,
+    setZones,
     selectedFixtureId,
+    selectedZoneId,
+    navigationLevel,
     isVMDMode,
     vmdFixtureIndex,
     enterVMDMode,
     exitVMDMode,
+    exitZoneView,
     navigateVMD,
   } = useSceneStore()
 
   // 샘플 데이터 초기화
   useEffect(() => {
     setFixtures(sampleFixtures)
-  }, [setFixtures])
+    setZones(sampleZones)
+  }, [setFixtures, setZones])
 
   // 키보드 이벤트 처리
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isVMDMode) {
+      if (navigationLevel === 'fixture') {
         if (e.key === 'ArrowLeft') {
           navigateVMD('prev')
         } else if (e.key === 'ArrowRight') {
@@ -135,16 +192,28 @@ function App() {
         } else if (e.key === 'Escape') {
           exitVMDMode()
         }
-      } else if (selectedFixtureId && e.key === 'Enter') {
-        enterVMDMode(selectedFixtureId)
+      } else if (navigationLevel === 'zone') {
+        if (e.key === 'Escape') {
+          exitZoneView()
+        } else if (selectedFixtureId && e.key === 'Enter') {
+          enterVMDMode(selectedFixtureId)
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isVMDMode, selectedFixtureId, navigateVMD, exitVMDMode, enterVMDMode])
+  }, [navigationLevel, selectedFixtureId, navigateVMD, exitVMDMode, exitZoneView, enterVMDMode])
 
-  const currentFixture = fixtures[vmdFixtureIndex]
+  // 현재 구역 내 매대들
+  const zoneFixtures = selectedZoneId
+    ? fixtures.filter((f) => f.zoneId === selectedZoneId)
+    : fixtures
+  const currentFixture = zoneFixtures[vmdFixtureIndex]
+
+  const isStoreLevel = navigationLevel === 'store'
+  const isZoneLevel = navigationLevel === 'zone'
+  const isFixtureLevel = navigationLevel === 'fixture'
 
   return (
     <div className="w-full h-full bg-white">
@@ -153,19 +222,19 @@ function App() {
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold text-gray-900">Retail-X</h1>
           <div className="h-4 w-px bg-gray-200" />
-          <span className="text-sm text-gray-500">이마트 성수점</span>
+          <NavigationBreadcrumb storeName="이마트 성수점" />
         </div>
         <div className="flex items-center gap-3">
-          {!isVMDMode && (
-            <span className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              viewMode === 'TOP'
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-600'
-            }`}>
+          {isStoreLevel && (
+            <span
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                viewMode === 'TOP' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
               {viewMode === 'TOP' ? '2D' : '3D'}
             </span>
           )}
-          {selectedFixtureId && !isVMDMode && (
+          {isZoneLevel && selectedFixtureId && (
             <button
               onClick={() => enterVMDMode(selectedFixtureId)}
               className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-full transition-colors"
@@ -176,14 +245,14 @@ function App() {
         </div>
       </header>
 
-      {/* 뷰 컨트롤 버튼 (VMD 모드가 아닐 때만) */}
-      {!isVMDMode && <ViewControls />}
+      {/* 뷰 컨트롤 버튼 (매장 레벨에서만) */}
+      {isStoreLevel && <ViewControls />}
 
-      {/* VMD 컨트롤 (VMD 모드일 때만) */}
-      {isVMDMode && currentFixture && (
+      {/* VMD 컨트롤 (매대 레벨에서만) */}
+      {isFixtureLevel && currentFixture && (
         <VMDControls
           currentIndex={vmdFixtureIndex}
-          totalCount={fixtures.length}
+          totalCount={zoneFixtures.length}
           fixtureName={currentFixture.name}
           onPrev={() => navigateVMD('prev')}
           onNext={() => navigateVMD('next')}
@@ -191,14 +260,27 @@ function App() {
         />
       )}
 
+      {/* 뒤로가기 버튼 (구역 레벨에서) */}
+      {isZoneLevel && (
+        <button
+          onClick={exitZoneView}
+          className="absolute left-6 top-20 z-20 flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all border border-gray-100 text-gray-700 hover:text-gray-900"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="text-sm font-medium">매장 전체</span>
+        </button>
+      )}
+
       {/* 3D 캔버스 */}
       <div className="w-full h-full">
         <Canvas
           shadows
-          camera={{ position: [15, 15, 15], fov: 50 }}
+          camera={{ position: [20, 20, 20], fov: 50 }}
           style={{ background: '#fafafa' }}
           onPointerMissed={() => {
-            if (!isVMDMode) {
+            if (isZoneLevel) {
               useSceneStore.getState().setSelectedFixture(null)
             }
           }}
@@ -207,16 +289,37 @@ function App() {
         </Canvas>
       </div>
 
-      {/* 선택된 매대 정보 (VMD 모드가 아닐 때) */}
-      {selectedFixtureId && !isVMDMode && (
+      {/* 선택된 매대 정보 (구역 레벨에서) */}
+      {isZoneLevel && selectedFixtureId && (
         <div className="absolute bottom-6 left-6 z-20">
           <div className="px-4 py-3 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
             <div className="text-xs text-gray-400 mb-1">선택된 매대</div>
             <div className="text-sm font-semibold text-gray-900">
-              {fixtures.find(f => f.id === selectedFixtureId)?.name}
+              {fixtures.find((f) => f.id === selectedFixtureId)?.name}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Enter 또는 상세보기 버튼 클릭</div>
+          </div>
+        </div>
+      )}
+
+      {/* 구역 정보 (구역 레벨에서) */}
+      {isZoneLevel && (
+        <div className="absolute bottom-6 right-6 z-20">
+          <div className="px-4 py-3 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
+            <div className="text-xs text-gray-400 mb-1">현재 구역</div>
+            <div className="flex items-center gap-2">
+              <span
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: zones.find((z) => z.id === selectedZoneId)?.color,
+                }}
+              />
+              <span className="text-sm font-semibold text-gray-900">
+                {zones.find((z) => z.id === selectedZoneId)?.name}
+              </span>
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              더블클릭 또는 Enter로 상세보기
+              매대 {zoneFixtures.length}개
             </div>
           </div>
         </div>

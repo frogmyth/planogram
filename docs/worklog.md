@@ -285,6 +285,21 @@ AWS_S3_BUCKET=planogram-assets
   - 화이트 배경, backdrop-blur 헤더
   - 둥근 버튼, 부드러운 그림자
   - 2D/3D 토글, 상세보기 버튼
+- **3단계 네비게이션 시스템 구현** (Retail Shelf Planner 분석 참고)
+  - 매장 > 구역 > 매대 계층적 네비게이션
+  - useSceneStore 확장: navigationLevel, selectedZoneId, Zone 인터페이스
+  - ZoneRenderer: 클릭/호버 이벤트, 선택 하이라이트
+  - CameraController: 구역 뷰 카메라 이동 (구역 크기에 따른 줌)
+  - NavigationBreadcrumb: 계층 표시 및 클릭 네비게이션
+  - 레벨별 조건부 렌더링:
+    - Store: 구역만 표시 (매대 숨김), 구역 클릭으로 진입
+    - Zone: 해당 구역 매대만 표시, 매대 클릭으로 선택
+    - Fixture: 선택 매대 + 좌우 인접 매대, 고스팅 효과
+  - 키보드 단축키: ESC (상위 레벨 이동), Enter (상세보기 진입)
+- **다음 개발 계획**
+  - Phase B: 상품 데이터 시스템 (MongoDB, Products API)
+  - Phase C: 파일 업로드 (CSV/Excel/이미지 자동 배치)
+  - Phase D: AI 이미지 서버 연동
 
 ---
 
