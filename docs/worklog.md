@@ -6,6 +6,86 @@
 
 ---
 
+## 개발 환경 정보
+
+### Git 저장소
+| 항목 | 값 |
+|------|-----|
+| Repository | https://github.com/frogmyth/planogram |
+| Branch | main |
+
+### 로컬 개발 환경
+
+#### 집 (Windows)
+| 항목 | 값 |
+|------|-----|
+| 로컬 경로 | E:\30.dev\Planogram |
+| Node.js | v22.19.0 |
+| npm | 10.9.3 |
+| Python | 3.11.2 |
+| Git | 2.49.0 |
+| MySQL | 설치됨 |
+| Docker | 미설치 |
+
+#### 회사 (Windows)
+| 항목 | 값 |
+|------|-----|
+| 로컬 경로 | (설정 필요) |
+| Node.js | (확인 필요) |
+| npm | (확인 필요) |
+| Python | (확인 필요) |
+| Git | (확인 필요) |
+| MySQL | (확인 필요) |
+| Docker | (확인 필요) |
+
+### 로컬 MySQL 설정
+| 항목 | 값 |
+|------|-----|
+| Host | localhost |
+| Port | 3306 |
+| Database | planogram (생성 예정) |
+| User | (설정 필요) |
+| Password | (설정 필요) |
+
+### AWS 인프라 (배포 시 설정)
+| 서비스 | 설정값 | 상태 |
+|--------|--------|------|
+| EC2 | Ubuntu 24.04 LTS, t3.large | 미생성 |
+| RDS MySQL | MySQL 8.0, db.t3.medium | 미생성 |
+| S3 | planogram-assets | 미생성 |
+| MongoDB | Atlas 또는 EC2 설치 | 미설정 |
+| Redis | ElastiCache cache.t3.micro | 미생성 |
+
+### 환경 변수 템플릿
+```bash
+# .env.local (로컬 개발용)
+NODE_ENV=development
+PORT=3000
+
+# MySQL (로컬)
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_NAME=planogram
+DATABASE_USER=root
+DATABASE_PASSWORD=<설정필요>
+
+# MongoDB (로컬 또는 Atlas)
+MONGODB_URI=mongodb://localhost:27017/planogram
+
+# JWT
+JWT_SECRET=<생성필요>
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# AWS (배포 시 설정)
+AWS_REGION=ap-northeast-2
+AWS_ACCESS_KEY_ID=<설정필요>
+AWS_SECRET_ACCESS_KEY=<설정필요>
+AWS_S3_BUCKET=planogram-assets
+```
+
+---
+
 ## 개발 단계별 작업 순서
 
 ### Phase 1: 기반 구축 (Core & Infrastructure)
@@ -175,9 +255,12 @@
 
 ## 작업 로그
 
-### 2025-12-25
+### 2025-12-25 (집)
 - 개발 계획서 검토 및 작업 순서 정리 완료
 - worklog.md 초기 작성
+- Git 저장소 생성 및 연동 완료 (https://github.com/frogmyth/planogram)
+- 개발 환경 확인: Node.js v22.19.0, Python 3.11.2, MySQL 설치됨
+- .gitignore 설정 및 초기 커밋 완료
 
 ---
 
