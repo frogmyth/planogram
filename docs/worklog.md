@@ -135,10 +135,10 @@ AWS_S3_BUCKET=planogram-assets
 | 순번 | 작업 항목 | 상태 | 비고 |
 |------|----------|------|------|
 | 2-5 | 도면 이미지 업로드 UI | [ ] | |
-| 2-6 | 3D 벽체 렌더링 | [ ] | ExtrudeGeometry |
-| 2-7 | 구역(Zone) 시각화 | [ ] | |
+| 2-6 | 3D 벽체 렌더링 | [X] | WallRenderer 컴포넌트 |
+| 2-7 | 구역(Zone) 시각화 | [X] | ZoneRenderer 컴포넌트 |
 | 2-8 | 벡터 편집기 (정점 수정) | [ ] | |
-| 2-9 | 탑뷰 모드 구현 | [ ] | |
+| 2-9 | 탑뷰 모드 구현 | [X] | CameraController |
 | 2-10 | 구역 라벨링 UI | [ ] | |
 
 ---
@@ -157,7 +157,7 @@ AWS_S3_BUCKET=planogram-assets
 | 순번 | 작업 항목 | 상태 | 비고 |
 |------|----------|------|------|
 | 3-5 | 매대 라이브러리 UI | [ ] | 좌측 패널 |
-| 3-6 | 파라메트릭 곤돌라 컴포넌트 | [ ] | 너비/높이/깊이 조절 |
+| 3-6 | 파라메트릭 곤돌라 컴포넌트 | [X] | GondolaMesh 컴포넌트 |
 | 3-7 | 평대 컴포넌트 | [ ] | |
 | 3-8 | 매대 드래그 앤 드롭 배치 | [ ] | |
 | 3-9 | 매대 회전/이동/삭제 | [ ] | |
@@ -171,10 +171,10 @@ AWS_S3_BUCKET=planogram-assets
 #### Frontend 작업
 | 순번 | 작업 항목 | 상태 | 비고 |
 |------|----------|------|------|
-| 4-1 | 카메라 트위닝 (GSAP) | [ ] | 탑뷰 <-> 정면뷰 |
-| 4-2 | 매대 고스팅 처리 | [ ] | 투명도 30% |
+| 4-1 | 카메라 트위닝 (GSAP) | [X] | 탑뷰 <-> 정면뷰 |
+| 4-2 | 매대 고스팅 처리 | [X] | 투명도 30% |
 | 4-3 | 선반 높이 드래그 조절 | [ ] | 25mm 스냅 |
-| 4-4 | 좌/우 화살표 네비게이션 | [ ] | |
+| 4-4 | 좌/우 화살표 네비게이션 | [X] | |
 | 4-5 | 선반 추가/삭제 기능 | [ ] | |
 | 4-6 | 매대/선반 번호 오버레이 | [ ] | HTML Overlay |
 
@@ -268,6 +268,23 @@ AWS_S3_BUCKET=planogram-assets
   - Backend: NestJS 프로젝트 생성
   - Backend: TypeORM + MySQL 연결 설정 (planogram DB - 회의실 시스템과 별도)
   - Backend: JWT 인증 관련 패키지 설치
+- **TailwindCSS v4 설정 수정**
+  - @tailwindcss/postcss 설치 및 postcss.config.js 업데이트
+  - index.css에 `@import "tailwindcss"` 적용
+- **포트 설정**: 5175로 설정 (회의실 시스템 5173과 분리)
+- **3D 매장 시각화 구현** (SmartThings 스타일 참조)
+  - ZoneRenderer: 구역 시각화 (8개 샘플 구역: 농산, 정육, 수산, 유제품, 냉동, 과자, 음료, 생활용품)
+  - WallRenderer: 벽체 렌더링
+  - GondolaMesh: 파라메트릭 매대 컴포넌트 (선반, 포스트, 베이스, 뒷판)
+- **VMD 정면뷰 모드 구현** (애플 스타일 UI)
+  - CameraController: GSAP 트위닝으로 TOP/PERSPECTIVE/VMD 뷰 전환
+  - VMDControls: 좌우 화살표 네비게이션, 키보드 단축키 (←/→/ESC)
+  - 매대 고스팅: 선택 외 매대 투명도 30%
+  - 샘플 매대 데이터 8개 추가 (A-01, A-02, B-01, B-02, C-01, D-01, E-01, F-01)
+- **UI 스타일링**
+  - 화이트 배경, backdrop-blur 헤더
+  - 둥근 버튼, 부드러운 그림자
+  - 2D/3D 토글, 상세보기 버튼
 
 ---
 
@@ -292,9 +309,9 @@ AWS_S3_BUCKET=planogram-assets
 
 ## 병행 프로젝트 현황
 
-| 프로젝트 | Git 저장소 | 설명 |
-|----------|-----------|------|
-| **Planogram (현재)** | https://github.com/frogmyth/planogram | 매장 VMD 3D 시뮬레이션 |
-| **회의실 시스템** | https://github.com/frogmyth/meeting-room-system | 회의실 예약 시스템 |
+| 프로젝트 | Git 저장소 | 설명 | 개발서버 |
+|----------|-----------|------|---------|
+| **Planogram (현재)** | https://github.com/frogmyth/planogram | 매장 VMD 3D 시뮬레이션 | http://localhost:5175 |
+| **회의실 시스템** | https://github.com/frogmyth/meeting-room-system | 회의실 예약 시스템 | http://localhost:5173 |
 
 > 각 프로젝트는 별도 worklog로 관리

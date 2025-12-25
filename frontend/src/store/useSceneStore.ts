@@ -1,32 +1,76 @@
 import { create } from 'zustand'
 
-interface SceneState {
-  // 선택된 객체
-  selectedObjectId: string | null
-  setSelectedObject: (id: string | null) => void
+export interface FixtureInstance {
+  id: string
+  name: string
+  zoneId: string
+  position: { x: number; y: number; z: number }
+  rotation: number
+  width: number
+  height: number
+  depth: number
+  shelfCount: number
+}
 
-  // 매대 목록 (임시)
+interface SceneState {
+  // 선택된 매대
+  selectedFixtureId: string | null
+  setSelectedFixture: (id: string | null) => void
+
+  // VMD 모드 (정면뷰)
+  isVMDMode: boolean
+  vmdFixtureIndex: number
+  enterVMDMode: (fixtureId: string) => void
+  exitVMDMode: () => void
+  navigateVMD: (direction: 'prev' | 'next') => void
+
+  // 매대 목록
   fixtures: FixtureInstance[]
+  setFixtures: (fixtures: FixtureInstance[]) => void
   addFixture: (fixture: FixtureInstance) => void
   removeFixture: (id: string) => void
   updateFixture: (id: string, updates: Partial<FixtureInstance>) => void
 }
 
-interface FixtureInstance {
-  id: string
-  templateId: string
-  position: { x: number; y: number; z: number }
-  rotation: number
-  name: string
-}
+export const useSceneStore = create<SceneState>((set, get) => ({
+  // 선택된 매대
+  selectedFixtureId: null,
+  setSelectedFixture: (id) => set({ selectedFixtureId: id }),
 
-export const useSceneStore = create<SceneState>((set) => ({
-  // 선택된 객체
-  selectedObjectId: null,
-  setSelectedObject: (id) => set({ selectedObjectId: id }),
+  // VMD 모드
+  isVMDMode: false,
+  vmdFixtureIndex: 0,
+  enterVMDMode: (fixtureId) => {
+    const { fixtures } = get()
+    const index = fixtures.findIndex((f) => f.id === fixtureId)
+    if (index !== -1) {
+      set({
+        isVMDMode: true,
+        vmdFixtureIndex: index,
+        selectedFixtureId: fixtureId,
+      })
+    }
+  },
+  exitVMDMode: () => set({ isVMDMode: false, selectedFixtureId: null }),
+  navigateVMD: (direction) => {
+    const { fixtures, vmdFixtureIndex } = get()
+    let newIndex = vmdFixtureIndex
+    if (direction === 'prev' && vmdFixtureIndex > 0) {
+      newIndex = vmdFixtureIndex - 1
+    } else if (direction === 'next' && vmdFixtureIndex < fixtures.length - 1) {
+      newIndex = vmdFixtureIndex + 1
+    }
+    if (newIndex !== vmdFixtureIndex) {
+      set({
+        vmdFixtureIndex: newIndex,
+        selectedFixtureId: fixtures[newIndex].id,
+      })
+    }
+  },
 
   // 매대 목록
   fixtures: [],
+  setFixtures: (fixtures) => set({ fixtures }),
   addFixture: (fixture) =>
     set((state) => ({ fixtures: [...state.fixtures, fixture] })),
   removeFixture: (id) =>
