@@ -17,7 +17,7 @@ interface GondolaMeshProps {
 }
 
 export function GondolaMesh({
-  id,
+  id: _id,
   name,
   position,
   rotation = 0,
@@ -29,6 +29,7 @@ export function GondolaMesh({
   isGhosted = false,
   onClick,
 }: GondolaMeshProps) {
+  void _id // Reserved for future use
   const groupRef = useRef<THREE.Group>(null)
 
   const shelfHeight = 0.02
@@ -36,8 +37,8 @@ export function GondolaMesh({
   const postWidth = 0.03
   const baseHeight = 0.15
 
-  // 색상 설정
-  const frameColor = isSelected ? '#1d4ed8' : '#d1d5db'
+  // 색상 설정 - 선택 여부와 관계없이 동일한 색상
+  const frameColor = '#a3a3a3'  // 중간 회색 (neutral-400)
   const shelfColor = '#f5f5f5'
   const opacity = isGhosted ? 0.3 : 1
 
@@ -124,18 +125,7 @@ export function GondolaMesh({
         </Html>
       )}
 
-      {/* 선택 표시 (하이라이트 아웃라인) */}
-      {isSelected && (
-        <mesh position={[0, height / 2, 0]}>
-          <boxGeometry args={[width + 0.1, height + 0.1, depth + 0.1]} />
-          <meshBasicMaterial
-            color="#3b82f6"
-            transparent
-            opacity={0.1}
-            side={THREE.BackSide}
-          />
-        </mesh>
-      )}
+      {/* 선택 표시 제거됨 */}
     </group>
   )
 }

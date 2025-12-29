@@ -160,7 +160,7 @@ AWS_S3_BUCKET=planogram-assets
 | 3-6 | 파라메트릭 곤돌라 컴포넌트 | [X] | GondolaMesh 컴포넌트 |
 | 3-7 | 평대 컴포넌트 | [ ] | |
 | 3-8 | 매대 드래그 앤 드롭 배치 | [ ] | |
-| 3-9 | 매대 회전/이동/삭제 | [ ] | |
+| 3-9 | 매대 회전/이동/삭제 | [X] | 3ds Max 스타일 기즈모 |
 | 3-10 | 매대 ID 자동 부여 로직 | [ ] | A-01-01 형식 |
 | 3-11 | 속성 편집 패널 | [ ] | 우측 |
 
@@ -301,6 +301,89 @@ AWS_S3_BUCKET=planogram-assets
   - Phase C: 파일 업로드 (CSV/Excel/이미지 자동 배치)
   - Phase D: AI 이미지 서버 연동
 
+### 2025-12-26 (집)
+- **그리드 기반 매대 배치 시스템 개발 (진행중)**
+  - `geoje-fixtures.ts` 파일 생성: 매대 데이터 정의 헬퍼 함수
+  - `createFixture()` 헬퍼 함수 구현:
+    - 파라미터: name, zoneId, row, col, widthCells, rotation, type, shelfCount
+    - 셀 단위 좌표를 3D 위치로 변환
+    - rotation 값에 따른 매대 방향 처리 (0, 90, 180, 270도)
+  - 매대 규격 정의:
+    - 1개 매대 = 6셀 (widthCells 단위)
+    - 매대 깊이 = CELL_SIZE × 0.5 (고정)
+    - 통로 오프셋 = CELL_SIZE × 0.25 (매대 앞 공간)
+  - 48개 매대 데이터 정의 (12개 구역):
+    - 생활용품(living), 정육(meat), 수산물(seafood)
+    - 냉장/냉동(cold), 리빙/홈(home), 과자/음료(snack)
+    - 가전/디지털(digital), 조미료(sauce), 면류(noodle)
+    - 과일/채소(fruit), 특선(special), 베이커리(bakery)
+  - 매대 타입: gondola, island, wall, endcap
+
+- **디버깅 및 문제 분석**
+  - App.tsx에 Zone 레벨 디버그 로깅 추가
+  - 콘솔 확인: 48개 매대 데이터 정상 로드, 구역별 필터링 정상 동작
+  - **발견된 문제점**:
+    - 매대가 구역 영역 안에 표시되지 않고 아래쪽에 렌더링됨
+    - 그리드 좌표계와 매대 좌표계 간 변환 불일치
+    - Grid3DRenderer가 90도 Y축 회전 적용하여 좌표 변환 필요
+
+- **설계 재검토 및 방향 전환 결정**
+  - 기존 그리드 기반 구역 우선 방식의 문제점 분석:
+    - 이중 좌표계 (그리드 좌표 vs 3D 좌표) 변환 복잡도
+    - 그리드 셀 기반 매대 배치의 제약
+    - 실제 업무 프로세스와 맞지 않음
+  - **새로운 설계 방향 결정: 평면도 기반 매대 우선 방식**
+    - 기존: 구역 정의 → 구역 내 매대 배치
+    - 변경: 평면도 로드 → 매대 자유 배치 → 매대별 제품군 지정 → 구역 자동 형성
+  - **3D 좌표계 표준화 (Three.js Y-up)**
+    - X축: 동서 방향 (오른쪽 = +X)
+    - Y축: 높이 (위쪽 = +Y)
+    - Z축: 남북 방향 (앞쪽 = +Z)
+    - 단위: 미터 (실척)
+  - 업계 플래노그램 솔루션 분석:
+    - Blue Yonder, RELEX, 3DVR, ReadySet VR 등
+    - 공통점: 평면도 기반 + 실척 + 매대 자유 배치
+
+- **개발 계획서 (DEVELOPMENT_PLAN.md) 업데이트**
+  - 핵심 워크플로우 추가
+  - 3D 좌표계 표준 문서화
+  - Phase 2~3 재구성:
+    - Phase 2: 평면도 기반 매장 구현
+    - Phase 3: 매대 배치 시스템 (제품군 지정 포함)
+  - 새로운 데이터 구조 정의 (Store, Fixture, ProductCategory)
+
+- **1단계 구현: 좌표계 통합 및 기본 씬 재구성**
+  - **타입 정의 완전 재작성** (`frontend/src/types/store.ts`)
+    - 새로운 타입: Store, Fixture, ProductCategory, FloorPlan, Wall, Column
+    - Three.js Y-up 좌표계 명시 (X=동서, Y=높이, Z=남북)
+    - 단위: 미터 (실척 100%)
+    - 기본값 상수: DEFAULT_CAMERA_CONFIG, DEFAULT_FIXTURE_DIMENSIONS
+  - **useSceneStore 새 구조로 업데이트**
+    - Zone 관련 코드 제거 (구역 레벨 네비게이션 폐지)
+    - 네비게이션: 'select' | 'store' | 'fixture' (3단계 → 2단계 단순화)
+    - ProductCategory 관리 추가
+    - 헬퍼 함수: getFixtureById, getFixturesByCategory, getStoreDimensions
+  - **기존 그리드 관련 코드 제거**
+    - GridEditor.tsx 삭제
+    - ZoneRenderer.tsx 삭제
+    - App.tsx에서 그리드 편집 모드/씬 제거
+  - **새로운 3D 컴포넌트 생성**
+    - FloorRenderer: 바닥면 렌더링 (미터 단위)
+    - FixtureRenderer: 매대 렌더링 (유형별 색상, 선반 구조)
+  - **CameraController 단순화**
+    - Zone 뷰 관련 코드 제거
+    - Store 뷰, Fixture 뷰만 지원
+  - **UI 컴포넌트 업데이트**
+    - StoreSelector: Store 타입 사용, 구역 수 대신 매대 수 표시
+    - NavigationBreadcrumb: Zone 레벨 제거
+  - **샘플 데이터 새 타입으로 업데이트**
+    - geoje-fixtures.ts: 새 Fixture 타입 (position, dimensions, structure)
+    - geoje-hanaromart.ts: 새 Store 타입 (floorPlan, walls, cameraConfig)
+    - index.ts: StoreListItem 타입 수정
+  - **빌드 테스트 성공**
+    - 모든 TypeScript 오류 해결
+    - vite build 성공 (13.48초)
+
 ---
 
 ## 기술 스택 요약
@@ -330,3 +413,89 @@ AWS_S3_BUCKET=planogram-assets
 | **회의실 시스템** | https://github.com/frogmyth/meeting-room-system | 회의실 예약 시스템 | http://localhost:5173 |
 
 > 각 프로젝트는 별도 worklog로 관리
+
+### 2025-12-27 (집)
+- **매대 편집 시스템 대폭 개선**
+  - **3ds Max 스타일 변환 도구 구현**
+    - W키: 이동 모드 (X, Z 축 화살표 기즈모)
+    - E키: 회전 모드 (Y축 원형 기즈모)
+    - ESC키: 편집 모드 종료
+    - 편집 모드 토글 버튼 및 UI 안내 추가
+  - **TransformGizmo 컴포넌트 신규 개발**
+    - MoveGizmo: X축(빨강), Z축(파랑) 화살표
+    - RotateGizmo: Y축 노란색 원형 링 + 15도 눈금
+    - 매대 회전에 따른 로컬 좌표계 지원 (기즈모가 매대 앞방향 기준으로 표시)
+    - 히트 영역 확대로 클릭 용이성 개선
+    - window 레벨 이벤트 핸들러로 드래그 안정성 확보
+  - **회전 시스템 개선**
+    - FixtureRotation 타입: 90도 단위 → 15도 단위로 변경
+    - rotateFixtureTo 함수: 15도 스냅 적용
+    - 회전 모드에서 이동 비활성화 (모드 분리)
+  - **줌 상태 유지 기능**
+    - 편집 모드 진입/매대 선택 시 카메라 줌 상태 유지
+    - VMD 모드 복귀 시에만 카메라 리셋
+  - **벽 충돌 및 스냅 기능 구현**
+    - checkWallCollision: 매대-벽 AABB 충돌 체크
+    - snapToWalls: 벽 근처 자석 스냅 (0.3m 거리)
+    - snapToFixturesAndWalls: 매대+벽 통합 스냅
+    - clampToWallBounds: 벽 경계 제한
+    - 매대가 벽을 통과할 수 없도록 제한
+  - **기즈모 크기 증가**
+    - 화살표 길이: 0.8m → 1.2m
+    - 회전 링 반경: 0.7m → 1.0m
+    - 중심점, 화살표 머리 크기 증가
+  - **기타 UI 개선**
+    - 편집 모드 버튼 z-index 수정
+    - 매대 정면 방향 표시 (녹색 라인/화살표)
+    - 선반 색상 연한 회색으로 변경
+
+- **파일 변경 사항**
+  - 신규: `frontend/src/components/editor/TransformGizmo.tsx`
+  - 수정: `frontend/src/components/editor/EditModeToggle.tsx` (W/E 모드 버튼)
+  - 수정: `frontend/src/components/editor/DraggableFixture.tsx` (transformMode 체크, 벽 충돌)
+  - 수정: `frontend/src/components/editor/snapUtils.ts` (벽 관련 함수 추가)
+  - 수정: `frontend/src/store/useSceneStore.ts` (TransformMode 타입, rotateFixtureTo)
+  - 수정: `frontend/src/types/store.ts` (FixtureRotation → number)
+  - 수정: `frontend/src/components/3d/CameraController.tsx` (줌 상태 유지)
+  - 수정: `frontend/src/App.tsx` (키보드 단축키, TransformGizmo 렌더링)
+
+---
+
+## 다음 작업 계획 (TODO)
+
+### 즉시 진행 필요
+1. **로컬 좌표계 이동 버그 수정**
+   - 현재 기즈모 방향대로 이동하지만 이동량이 두 번 적용되는 문제 확인 필요
+   - onDrag 호출 시 x, z 두 번 호출되어 충돌 체크 문제 발생 가능
+
+2. **회전 시 충돌 체크**
+   - 매대 회전 시 벽/다른 매대와 충돌 체크 추가
+   - 충돌 시 회전 취소 또는 롤백
+
+### 단기 계획
+3. **매대 삭제 기능**
+   - Delete 키 또는 버튼으로 선택된 매대 삭제
+   - 삭제 확인 다이얼로그
+
+4. **매대 복사/붙여넣기**
+   - Ctrl+C/V로 매대 복제
+   - 복제 시 위치 오프셋 적용
+
+5. **Undo/Redo 시스템**
+   - 이동/회전/삭제 작업 취소/재실행
+   - 작업 히스토리 스택
+
+### 중기 계획
+6. **선반 높이 조절**
+   - 정면뷰에서 선반 드래그로 높이 조절
+   - 25mm 단위 스냅
+
+7. **상품 데이터 시스템**
+   - MongoDB 연동
+   - 상품 CRUD API
+   - 상품 팔레트 UI
+
+8. **상품 진열 기능**
+   - 선반에 상품 드래그 앤 드롭
+   - 페이싱 수 조절
+   - 충돌 감지

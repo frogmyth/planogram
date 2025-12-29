@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "id": "sample-minimart",
+    "name": "샘플 미니마트",
+    "address": "서울시 강남구 테헤란로",
+    "createdAt": "2025-01-01"
+  },
+  "config": {
+    "size": {
+      "width": 20,
+      "depth": 15
+    },
+    "floor": {
+      "width": 24,
+      "depth": 19
+    },
+    "center": {
+      "x": 10,
+      "z": 7.5
+    },
+    "camera": {
+      "storeViewHeight": 30,
+      "zoneViewMinHeight": 8,
+      "zoneViewMaxHeight": 20,
+      "fixtureViewDistance": 3
+    }
+  },
+  "zones": [
+    {
+      "id": "zone-snack",
+      "name": "과자/스낵",
+      "color": "#fb923c",
+      "bounds": { "minX": 2, "minZ": 2, "maxX": 8, "maxZ": 6 },
+      "category": "가공식품"
+    },
+    {
+      "id": "zone-drink",
+      "name": "음료",
+      "color": "#60a5fa",
+      "bounds": { "minX": 8, "minZ": 2, "maxX": 14, "maxZ": 6 },
+      "category": "가공식품"
+    },
+    {
+      "id": "zone-daily",
+      "name": "생활용품",
+      "color": "#4ade80",
+      "bounds": { "minX": 14, "minZ": 2, "maxX": 18, "maxZ": 6 },
+      "category": "생활용품"
+    },
+    {
+      "id": "zone-instant",
+      "name": "라면/즉석",
+      "color": "#f97316",
+      "bounds": { "minX": 2, "minZ": 8, "maxX": 8, "maxZ": 12 },
+      "category": "가공식품"
+    },
+    {
+      "id": "zone-frozen",
+      "name": "냉동식품",
+      "color": "#22d3d3",
+      "bounds": { "minX": 8, "minZ": 8, "maxX": 14, "maxZ": 12 },
+      "category": "냉동"
+    },
+    {
+      "id": "zone-fresh",
+      "name": "신선식품",
+      "color": "#22c55e",
+      "bounds": { "minX": 14, "minZ": 8, "maxX": 18, "maxZ": 12 },
+      "category": "신선식품"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "snack-01",
+      "name": "과자-01",
+      "zoneId": "zone-snack",
+      "position": { "x": 4, "y": 0, "z": 4 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 1.8,
+      "depth": 0.45,
+      "shelfCount": 5,
+      "type": "gondola"
+    },
+    {
+      "id": "snack-02",
+      "name": "과자-02",
+      "zoneId": "zone-snack",
+      "position": { "x": 6, "y": 0, "z": 4 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 1.8,
+      "depth": 0.45,
+      "shelfCount": 5,
+      "type": "gondola"
+    },
+    {
+      "id": "drink-01",
+      "name": "음료-01",
+      "zoneId": "zone-drink",
+      "position": { "x": 10, "y": 0, "z": 4 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 2.0,
+      "depth": 0.6,
+      "shelfCount": 4,
+      "type": "gondola"
+    },
+    {
+      "id": "drink-02",
+      "name": "음료-02",
+      "zoneId": "zone-drink",
+      "position": { "x": 12, "y": 0, "z": 4 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 2.0,
+      "depth": 0.6,
+      "shelfCount": 4,
+      "type": "gondola"
+    },
+    {
+      "id": "daily-01",
+      "name": "생활-01",
+      "zoneId": "zone-daily",
+      "position": { "x": 16, "y": 0, "z": 4 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 1.8,
+      "depth": 0.45,
+      "shelfCount": 5,
+      "type": "gondola"
+    },
+    {
+      "id": "instant-01",
+      "name": "라면-01",
+      "zoneId": "zone-instant",
+      "position": { "x": 4, "y": 0, "z": 10 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 1.8,
+      "depth": 0.45,
+      "shelfCount": 5,
+      "type": "gondola"
+    },
+    {
+      "id": "instant-02",
+      "name": "라면-02",
+      "zoneId": "zone-instant",
+      "position": { "x": 6, "y": 0, "z": 10 },
+      "rotation": 0,
+      "width": 0.9,
+      "height": 1.8,
+      "depth": 0.45,
+      "shelfCount": 5,
+      "type": "gondola"
+    },
+    {
+      "id": "frozen-01",
+      "name": "냉동-01",
+      "zoneId": "zone-frozen",
+      "position": { "x": 10, "y": 0, "z": 10 },
+      "rotation": 0,
+      "width": 1.2,
+      "height": 1.0,
+      "depth": 0.8,
+      "shelfCount": 2,
+      "type": "island"
+    },
+    {
+      "id": "frozen-02",
+      "name": "냉동-02",
+      "zoneId": "zone-frozen",
+      "position": { "x": 12, "y": 0, "z": 10 },
+      "rotation": 0,
+      "width": 1.2,
+      "height": 1.0,
+      "depth": 0.8,
+      "shelfCount": 2,
+      "type": "island"
+    },
+    {
+      "id": "fresh-01",
+      "name": "신선-01",
+      "zoneId": "zone-fresh",
+      "position": { "x": 16, "y": 0, "z": 10 },
+      "rotation": 90,
+      "width": 1.5,
+      "height": 1.2,
+      "depth": 0.8,
+      "shelfCount": 2,
+      "type": "fresh"
+    }
+  ]
+}

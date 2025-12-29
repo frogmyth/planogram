@@ -6,12 +6,48 @@
 **Retail-X 3D Builder** (매장 VMD 3D 시뮬레이션 플랫폼)
 
 ### 1.2 목표
-2D 평면도를 기반으로 3D 매장 공간을 자동/반자동으로 생성하고, 다양한 규격의 집기(매대) 배치부터 상품 진열, LCD 디스플레이 시뮬레이션까지 가능한 통합 VMD 솔루션 개발
+2D 평면도를 기반으로 3D 매장 공간을 실척으로 구현하고, 매대 배치 → 제품군 지정 → 상품 진열 → LCD 시뮬레이션까지 가능한 통합 VMD 솔루션 개발
 
 ### 1.3 핵심 가치
 - 매장 오픈/리뉴얼 전 가상 시뮬레이션을 통한 비용 절감
+- 평면도 기반 실척 매장 구현 (100% 스케일)
 - 브랜드별 규격화된 매대 관리
-- 직관적인 진열 관리
+- 직관적인 매대 배치 및 제품군 할당
+- 상품 진열 시뮬레이션
+
+### 1.4 핵심 워크플로우
+```
+1. 평면도 업로드 → 매장 크기 설정 (실척 미터 단위)
+2. 평면도 위에 매대 자유 배치 (드래그 & 드롭)
+3. 매대별 제품군 지정 → 구역 자동 형성
+4. 매대 클릭 → VMD 정면뷰 → 상품 진열
+```
+
+### 1.5 3D 좌표계 표준 (Three.js Y-up)
+```
+┌─────────────────────────────────────┐
+│           탑뷰 (Top View)           │
+│                                     │
+│    ← -X        북(North)      +X →  │
+│                  ↑                  │
+│                  │                  │
+│    서(West)      │      동(East)    │
+│                  │                  │
+│                  ↓                  │
+│               남(South)             │
+│                                     │
+│   화면 위쪽 = -Z (Three.js 기준)     │
+│   화면 아래쪽 = +Z                   │
+│   카메라 높이 = +Y                   │
+└─────────────────────────────────────┘
+
+좌표계:
+- X축: 동서 방향 (오른쪽 = +X)
+- Y축: 높이 (위쪽 = +Y)
+- Z축: 남북 방향 (앞쪽/남쪽 = +Z, 뒤쪽/북쪽 = -Z)
+
+단위: 미터 (m) - 실척
+```
 
 ---
 
@@ -1060,24 +1096,31 @@ server {
 
 ## 8. 개발 단계별 마일스톤
 
+> **설계 변경 (2025-12-26):** 그리드 기반 구역 우선 방식에서 **평면도 기반 매대 우선** 방식으로 전환
+> - 기존: 구역 정의 → 구역 내 매대 배치
+> - 변경: 평면도 로드 → 매대 자유 배치 → 매대별 제품군 지정 → 구역 자동 형성
+
+---
+
 ### Phase 1: 기반 구축 (Core & Infrastructure)
 
-**목표:** 프로젝트 기본 설정, 인증, 3D 뷰어 기본 구현
+**목표:** 프로젝트 기본 설정, 3D 뷰어, 통합 좌표계 구현
 
 **Backend 작업:**
-- [ ] NestJS 프로젝트 초기 설정
-- [ ] MySQL 연결 및 TypeORM 설정
+- [X] NestJS 프로젝트 초기 설정
+- [X] MySQL 연결 및 TypeORM 설정
 - [ ] MongoDB 연결 및 Mongoose 설정
 - [ ] 사용자 인증 (JWT) 구현
 - [ ] 프로젝트 CRUD API
 - [ ] 파일 업로드 (S3) 연동
 
 **Frontend 작업:**
-- [ ] React + Vite 프로젝트 설정
-- [ ] React Three Fiber 기본 씬 구성
-- [ ] 카메라 컨트롤 (OrbitControls)
-- [ ] 기본 조명 설정
-- [ ] Zustand 상태 관리 설정
+- [X] React + Vite 프로젝트 설정
+- [X] React Three Fiber 기본 씬 구성
+- [X] 카메라 컨트롤 (OrbitControls)
+- [X] 기본 조명 설정
+- [X] Zustand 상태 관리 설정
+- [ ] 통합 좌표계 구현 (Three.js Y-up, 미터 단위)
 - [ ] 로그인/회원가입 페이지
 - [ ] 대시보드 레이아웃
 
@@ -1094,82 +1137,162 @@ server {
 
 ---
 
-### Phase 2: 공간 생성 (Space Builder)
+### Phase 2: 평면도 기반 매장 구현 (Floor Plan Builder)
 
-**목표:** 도면 업로드, 벽체 생성, 구역 설정
+**목표:** 평면도 업로드, 실척 매장 공간 생성, 벽체/기둥 렌더링
 
 **Backend 작업:**
+- [ ] 평면도 업로드 API (S3)
 - [ ] FastAPI 이미지 서비스 구축
-- [ ] OpenCV 도면 분석 알고리즘 구현
-  - 엣지 검출 (Canny Edge Detection)
-  - 직선 검출 (Hough Transform)
-  - 구역 분할 (Contour Detection)
-- [ ] 분석 결과 저장 API
-- [ ] 벽체/구역 수정 API
+- [ ] OpenCV 도면 분석 알고리즘 (벽체/기둥 추출)
+- [ ] 매장 데이터 저장 API
 
 **Frontend 작업:**
-- [ ] 도면 이미지 업로드 UI
-- [ ] 3D 벽체 렌더링 (ExtrudeGeometry)
-- [ ] 구역(Zone) 시각화
-- [ ] 벡터 편집기 (정점 수정)
-- [ ] 탑뷰 모드 구현
-- [ ] 구역 라벨링 UI
+- [ ] 평면도 업로드 UI
+- [ ] 매장 크기 설정 (가로 × 세로, 미터 단위)
+- [ ] 평면도 → 3D 바닥면 매핑
+- [X] 3D 벽체 렌더링 (WallRenderer)
+- [ ] 3D 기둥 렌더링 (ColumnRenderer)
+- [X] 탑뷰 모드 (CameraController)
+- [ ] 벽체/기둥 수동 편집 UI
+
+**데이터 구조:**
+```typescript
+interface Store {
+  id: string
+  name: string
+  floorPlan: {
+    imageUrl: string        // 평면도 이미지
+    widthMeters: number     // 실제 가로 (미터)
+    depthMeters: number     // 실제 세로 (미터)
+  }
+  walls: Wall[]
+  columns: Column[]
+}
+```
 
 **산출물:**
-- 도면 이미지 업로드 시 자동으로 벽체 추출
-- 사용자가 벽체 위치/높이 수정 가능
-- 구역 생성 및 라벨 지정
+- 평면도 업로드 후 실척 3D 매장 공간 생성
+- 벽체/기둥 3D 렌더링
+- 탑뷰에서 매장 전체 조망
 
 ---
 
-### Phase 3: 매대 시스템 (Fixture Engine)
+### Phase 3: 매대 배치 시스템 (Fixture Placement)
 
-**목표:** 매대 템플릿 관리, 배치, 파라메트릭 조절
+**목표:** 평면도 위에 매대 자유 배치, 매대별 제품군 지정
 
 **Backend 작업:**
 - [ ] 매대 템플릿 CRUD API
 - [ ] 매대 인스턴스 API
 - [ ] 씬 데이터 저장/조회 API
-- [ ] 변경 이력 관리
 
 **Frontend 작업:**
-- [ ] 매대 라이브러리 UI (좌측 패널)
-- [ ] 파라메트릭 곤돌라 컴포넌트
-  - 너비/높이/깊이 실시간 변경
-  - 선반 수 조절
-- [ ] 평대 컴포넌트
-- [ ] 매대 드래그 앤 드롭 배치
-- [ ] 매대 회전/이동/삭제
-- [ ] 매대 ID 자동 부여 로직
-- [ ] 속성 편집 패널 (우측)
+- [ ] 매대 라이브러리 패널 (좌측)
+  - 일반 매대 (곤돌라)
+  - 오픈형 매대 (아일랜드)
+  - 냉장 매대
+  - 냉동 매대
+  - 엔드캡
+  - 계산대
+- [X] 파라메트릭 곤돌라 컴포넌트
+- [ ] 매대 드래그 & 드롭 배치 (평면도 위)
+- [ ] 매대 회전 (0°, 90°, 180°, 270°)
+- [ ] 매대 크기 조절 (너비, 깊이, 높이)
+- [ ] 선반 수 / 선반 높이 설정
+- [ ] 매대 속성 패널 (우측)
+  - **제품군 선택** (핵심 기능)
+  - 매대 이름
+  - 크기 설정
+  - 선반 구성
+- [ ] 매대 ID 자동 부여
+
+**데이터 구조:**
+```typescript
+interface Fixture {
+  id: string
+  name: string
+
+  // 위치 (미터, Three.js Y-up 좌표계)
+  position: { x: number; y: number; z: number }
+  rotation: 0 | 90 | 180 | 270
+
+  // 크기 (미터)
+  dimensions: { width: number; depth: number; height: number }
+
+  // 타입
+  type: 'gondola' | 'island' | 'refrigerator' | 'freezer' | 'endcap' | 'checkout'
+
+  // 구조
+  structure: {
+    shelfCount: number
+    shelfHeights: number[]  // 각 선반 높이 (mm)
+    baseHeight: number      // 걸레받이
+  }
+
+  // 제품군 (매대별 지정 → 구역 자동 형성)
+  categoryId: string | null
+}
+```
 
 **산출물:**
-- 매대 템플릿 라이브러리에서 드래그하여 배치
-- 배치된 매대의 크기 파라메트릭 수정
-- 매대 ID 자동 표시 (A-01-01 형식)
+- 매대 라이브러리에서 드래그하여 평면도 위에 배치
+- 매대별 제품군 지정 → 같은 제품군 매대가 시각적으로 구분됨
+- 매대 파라메트릭 설정 (크기, 선반 수, 높이)
 
 ---
 
 ### Phase 4: VMD 에디터 (VMD Logic)
 
-**목표:** 매대 정면 뷰, 고스팅, 선반 조절, 좌우 네비게이션
+**목표:** 매대 정면 뷰, 선반 조절, 좌우 네비게이션
 
 **Frontend 작업:**
-- [ ] 카메라 트위닝 (GSAP)
-  - 탑뷰 -> 정면뷰 전환
-  - 정면뷰 -> 탑뷰 복귀
-- [ ] 매대 고스팅 처리 (투명도 30%)
-- [ ] 선반 높이 드래그 조절
-  - 구멍 간격 스냅 (25mm)
-- [ ] 좌/우 화살표 네비게이션
+- [X] 카메라 트위닝 (GSAP)
+  - 탑뷰 → 정면뷰 전환
+  - 정면뷰 → 탑뷰 복귀
+- [X] 매대 고스팅 처리 (투명도 30%)
+- [ ] 선반 높이 드래그 조절 (25mm 스냅)
+- [X] 좌/우 화살표 네비게이션
 - [ ] 선반 추가/삭제 기능
 - [ ] 매대/선반 번호 오버레이
 
 **산출물:**
-- 매대 더블 클릭 시 부드럽게 정면 뷰로 전환
+- 매대 클릭 시 부드럽게 정면 뷰로 전환
 - 주변 매대 반투명 처리
-- 선반 높이 마우스로 조절
+- 선반 높이 조절
 - 좌우 화살표로 인접 매대 이동
+
+---
+
+### 제품군 (Product Categories)
+
+매대별로 지정되는 제품군 정의:
+
+```typescript
+interface ProductCategory {
+  id: string
+  name: string
+  color: string           // 시각화 색상
+  isRefrigerated: boolean // 냉장/냉동 여부
+}
+
+// 예시
+const categories: ProductCategory[] = [
+  { id: 'fruit', name: '과일/채소', color: '#22C55E', isRefrigerated: false },
+  { id: 'meat', name: '정육/계란', color: '#EF4444', isRefrigerated: true },
+  { id: 'seafood', name: '수산물', color: '#3B82F6', isRefrigerated: true },
+  { id: 'dairy', name: '유제품', color: '#8B5CF6', isRefrigerated: true },
+  { id: 'frozen', name: '냉동식품', color: '#06B6D4', isRefrigerated: true },
+  { id: 'snack', name: '과자/음료', color: '#F59E0B', isRefrigerated: false },
+  { id: 'living', name: '생활용품', color: '#EC4899', isRefrigerated: false },
+  { id: 'bakery', name: '베이커리', color: '#84CC16', isRefrigerated: false },
+]
+```
+
+**구역 자동 형성:**
+- 매대에 제품군을 지정하면, 같은 제품군 매대끼리 시각적으로 색상 구분
+- "구역"은 명시적으로 정의하지 않고, 매대들의 제품군으로 자연스럽게 형성됨
+- 탑뷰에서 제품군별 색상으로 매장 레이아웃 한눈에 파악
 
 ---
 

@@ -17,7 +17,19 @@
       "Bash(npx @nestjs/cli new:*)",
       "Bash(npm install:*)",
       "Bash(npx tailwindcss:*)",
-      "Bash(npm exec:*)"
+      "Bash(npm exec:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(tree:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run start:dev:*)",
+      "Bash(mysql:*)",
+      "Bash(where:*)",
+      "Bash(curl:*)",
+      "Bash(timeout:*)",
+      "Bash(cat:*)"
     ]
   }
 }

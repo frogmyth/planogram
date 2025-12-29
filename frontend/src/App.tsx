@@ -1,76 +1,53 @@
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
-import { ZoneRenderer } from './components/3d/floor/ZoneRenderer'
-import { WallRenderer } from './components/3d/floor/WallRenderer'
-import { GondolaMesh } from './components/3d/fixtures/GondolaMesh'
 import { CameraController } from './components/3d/CameraController'
-import { ViewControls } from './components/ui/ViewControls'
 import { VMDControls } from './components/ui/VMDControls'
 import { NavigationBreadcrumb } from './components/ui/NavigationBreadcrumb'
-import { useUIStore, useSceneStore } from './store'
-import type { FixtureInstance, Zone } from './store/useSceneStore'
+import { StoreSelector } from './components/ui/StoreSelector'
+import { Minimap } from './components/ui/Minimap'
+import { FixtureRenderer } from './components/3d/fixtures/FixtureRenderer'
+import { FloorRenderer } from './components/3d/floor/FloorRenderer'
+import { WallRenderer } from './components/3d/floor/WallRenderer'
+import { ColumnRenderer } from './components/3d/floor/ColumnRenderer'
+import { DraggableFixture, EditModeToggle, FixtureEditPanel, TransformGizmo } from './components/editor'
+import { useSceneStore } from './store'
 import './App.css'
 
-// 샘플 매장 구역 데이터
-const sampleZones: Zone[] = [
-  { id: 'zone-1', name: '농산', color: '#86efac', bounds: { minX: 0, minZ: 0, maxX: 6, maxZ: 5 } },
-  { id: 'zone-2', name: '정육', color: '#fca5a5', bounds: { minX: 6, minZ: 0, maxX: 10, maxZ: 5 } },
-  { id: 'zone-3', name: '수산', color: '#93c5fd', bounds: { minX: 10, minZ: 0, maxX: 15, maxZ: 5 } },
-  { id: 'zone-4', name: '유제품', color: '#fcd34d', bounds: { minX: 0, minZ: 5, maxX: 5, maxZ: 10 } },
-  { id: 'zone-5', name: '냉동', color: '#67e8f9', bounds: { minX: 5, minZ: 5, maxX: 10, maxZ: 10 } },
-  { id: 'zone-6', name: '과자', color: '#f9a8d4', bounds: { minX: 10, minZ: 5, maxX: 15, maxZ: 10 } },
-  { id: 'zone-7', name: '음료', color: '#c4b5fd', bounds: { minX: 0, minZ: 10, maxX: 7, maxZ: 15 } },
-  { id: 'zone-8', name: '생활용품', color: '#fdba74', bounds: { minX: 7, minZ: 10, maxX: 15, maxZ: 15 } },
-]
+// ============================================
+// 플래노그램 메인 앱
+// 좌표계: Three.js Y-up (X=동서, Y=높이, Z=남북)
+// 단위: 미터 (실제 크기 100%)
+// ============================================
 
-const sampleWalls = [
-  { id: 'wall-1', start: { x: 0, z: 0 }, end: { x: 15, z: 0 }, height: 3, thickness: 0.15 },
-  { id: 'wall-2', start: { x: 15, z: 0 }, end: { x: 15, z: 15 }, height: 3, thickness: 0.15 },
-  { id: 'wall-3', start: { x: 15, z: 15 }, end: { x: 0, z: 15 }, height: 3, thickness: 0.15 },
-  { id: 'wall-4', start: { x: 0, z: 15 }, end: { x: 0, z: 0 }, height: 3, thickness: 0.15 },
-]
-
-// 샘플 매대 데이터
-const sampleFixtures: FixtureInstance[] = [
-  { id: 'fix-1', name: 'A-01', zoneId: 'zone-1', position: { x: 2, y: 0, z: 2 }, rotation: 0, width: 1.2, height: 2, depth: 0.5, shelfCount: 5 },
-  { id: 'fix-2', name: 'A-02', zoneId: 'zone-1', position: { x: 4, y: 0, z: 2 }, rotation: 0, width: 1.2, height: 2, depth: 0.5, shelfCount: 5 },
-  { id: 'fix-3', name: 'B-01', zoneId: 'zone-2', position: { x: 7, y: 0, z: 2 }, rotation: 0, width: 1.2, height: 1.8, depth: 0.5, shelfCount: 4 },
-  { id: 'fix-4', name: 'B-02', zoneId: 'zone-2', position: { x: 9, y: 0, z: 2 }, rotation: 0, width: 1.2, height: 1.8, depth: 0.5, shelfCount: 4 },
-  { id: 'fix-5', name: 'C-01', zoneId: 'zone-3', position: { x: 12, y: 0, z: 2 }, rotation: 0, width: 1.5, height: 2.2, depth: 0.6, shelfCount: 6 },
-  { id: 'fix-6', name: 'D-01', zoneId: 'zone-4', position: { x: 2, y: 0, z: 7 }, rotation: 90, width: 1.2, height: 2, depth: 0.5, shelfCount: 5 },
-  { id: 'fix-7', name: 'E-01', zoneId: 'zone-5', position: { x: 7, y: 0, z: 7 }, rotation: 0, width: 1.8, height: 2, depth: 0.8, shelfCount: 4 },
-  { id: 'fix-8', name: 'F-01', zoneId: 'zone-6', position: { x: 12, y: 0, z: 7 }, rotation: 0, width: 1.2, height: 2, depth: 0.5, shelfCount: 5 },
-]
-
+// 3D 씬 컴포넌트
 function Scene() {
-  const { viewMode } = useUIStore()
   const {
     fixtures,
-    zones,
     selectedFixtureId,
-    selectedZoneId,
     navigationLevel,
-    isVMDMode,
-    enterZoneView,
-    setSelectedFixture,
+    currentStore,
+    editMode,
     enterVMDMode,
+    setSelectedFixture,
+    getStoreCenter,
+    getStoreDimensions,
     getAdjacentFixtures,
+    getSelectedFixture,
   } = useSceneStore()
 
-  const isTopView = viewMode === 'TOP'
   const isStoreLevel = navigationLevel === 'store'
-  const isZoneLevel = navigationLevel === 'zone'
   const isFixtureLevel = navigationLevel === 'fixture'
+  const isEditMode = editMode === 'edit'
+  const selectedFixture = getSelectedFixture()
 
-  // 현재 레벨에 따라 표시할 매대 결정
-  const visibleFixtures = isStoreLevel
-    ? [] // 매장 레벨에서는 매대 숨김
-    : isZoneLevel
-    ? fixtures.filter((f) => f.zoneId === selectedZoneId)
-    : isFixtureLevel
+  // 매장 중심과 크기
+  const storeCenter = getStoreCenter()
+  const storeDimensions = getStoreDimensions()
+
+  // VMD 모드에서 표시할 매대 (선택된 매대 + 인접 매대)
+  const visibleFixtures = isFixtureLevel
     ? (() => {
-        // VMD 모드: 선택된 매대 + 좌우 인접 매대
         const adjacents = getAdjacentFixtures(selectedFixtureId || '')
         const result = []
         if (adjacents.prev) result.push(adjacents.prev)
@@ -83,107 +60,113 @@ function Scene() {
 
   return (
     <>
-      {/* 조명 */}
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[10, 20, 10]} intensity={0.6} castShadow />
+      {/* 조명 - 그림자 활성화 */}
+      <ambientLight intensity={0.6} />
+      <directionalLight
+        position={[20, 30, 20]}
+        intensity={0.8}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={100}
+        shadow-camera-left={-50}
+        shadow-camera-right={50}
+        shadow-camera-top={50}
+        shadow-camera-bottom={-50}
+      />
       <directionalLight position={[-10, 20, -10]} intensity={0.3} />
 
-      {/* 바닥 */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[7.5, -0.01, 7.5]} receiveShadow>
-        <planeGeometry args={[15, 15]} />
-        <meshStandardMaterial color="#fafafa" />
-      </mesh>
-
-      {/* 구역 렌더링 */}
-      <ZoneRenderer
-        zones={zones}
-        showLabels={isStoreLevel || isZoneLevel}
-        opacity={
-          isFixtureLevel
-            ? 0.1
-            : isZoneLevel
-            ? 0.5
-            : isTopView
-            ? 0.6
-            : 0.4
-        }
-        selectedZoneId={selectedZoneId}
-        onZoneClick={(zoneId) => {
-          if (isStoreLevel) {
-            enterZoneView(zoneId)
-          }
-        }}
-        interactive={isStoreLevel}
+      {/* 바닥면 */}
+      <FloorRenderer
+        width={storeDimensions.width}
+        depth={storeDimensions.depth}
+        centerX={storeCenter.x}
+        centerZ={storeCenter.z}
+        floorPlanImageUrl={currentStore?.floorPlan?.imageUrl}
       />
 
-      {/* 벽체 렌더링 */}
-      <WallRenderer
-        walls={sampleWalls.map((w) => ({
-          ...w,
-          height: isFixtureLevel ? 0.1 : isTopView ? 0.2 : 3,
-        }))}
-        color="#e5e7eb"
-      />
-
-      {/* 매대 렌더링 */}
-      {visibleFixtures.map((fixture) => (
-        <GondolaMesh
-          key={fixture.id}
-          id={fixture.id}
-          name={fixture.name}
-          position={[fixture.position.x, fixture.position.y, fixture.position.z]}
-          rotation={fixture.rotation}
-          width={fixture.width}
-          height={fixture.height}
-          depth={fixture.depth}
-          shelfCount={fixture.shelfCount}
-          isSelected={selectedFixtureId === fixture.id}
-          isGhosted={isFixtureLevel && selectedFixtureId !== fixture.id}
-          onClick={() => {
-            if (isFixtureLevel) return
-            if (isZoneLevel) {
-              setSelectedFixture(fixture.id)
-            }
-          }}
+      {/* 벽면 - VMD 모드에서 투명화 */}
+      {currentStore?.walls && (
+        <WallRenderer
+          walls={currentStore.walls}
+          color="#6b7280"
+          opacity={isFixtureLevel ? 0.15 : 1}
         />
-      ))}
+      )}
+
+      {/* 기둥 - VMD 모드에서 투명화 */}
+      {currentStore?.columns && (
+        <ColumnRenderer
+          columns={currentStore.columns}
+          color="#374151"
+          opacity={isFixtureLevel ? 0.15 : 1}
+        />
+      )}
+
+      {/* 매대 렌더링 - 편집 모드와 뷰 모드 분기 */}
+      {visibleFixtures.map((fixture) =>
+        isEditMode && isStoreLevel ? (
+          <DraggableFixture
+            key={fixture.id}
+            fixture={fixture}
+            isSelected={selectedFixtureId === fixture.id}
+            isGhosted={false}
+            onSelect={() => setSelectedFixture(fixture.id)}
+          />
+        ) : (
+          <FixtureRenderer
+            key={fixture.id}
+            fixture={fixture}
+            isSelected={selectedFixtureId === fixture.id}
+            isGhosted={isFixtureLevel && selectedFixtureId !== fixture.id}
+            onClick={() => {
+              if (isStoreLevel && !isEditMode) {
+                enterVMDMode(fixture.id)
+              }
+            }}
+          />
+        )
+      )}
+
+      {/* 변환 기즈모 (편집 모드 + 선택된 매대) */}
+      {isEditMode && isStoreLevel && selectedFixture && (
+        <TransformGizmo fixture={selectedFixture} />
+      )}
 
       {/* 환경 */}
       <Environment preset="apartment" />
 
-      {/* 카메라 컨트롤 */}
-      <CameraController target={[7.5, 0, 7.5]} />
+      {/* 카메라 컨트롤러 */}
+      <CameraController />
     </>
   )
 }
 
-function App() {
-  const { viewMode } = useUIStore()
+// 매장 뷰 컴포넌트
+function StoreView() {
   const {
     fixtures,
-    zones,
-    setFixtures,
-    setZones,
-    selectedFixtureId,
-    selectedZoneId,
+    currentStore,
     navigationLevel,
-    isVMDMode,
     vmdFixtureIndex,
-    enterVMDMode,
+    editMode,
     exitVMDMode,
-    exitZoneView,
     navigateVMD,
+    clearStore,
+    setEditMode,
+    setTransformMode,
+    getStoreCenter,
+    getStoreDimensions,
   } = useSceneStore()
-
-  // 샘플 데이터 초기화
-  useEffect(() => {
-    setFixtures(sampleFixtures)
-    setZones(sampleZones)
-  }, [setFixtures, setZones])
 
   // 키보드 이벤트 처리
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력 필드에서는 무시
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
       if (navigationLevel === 'fixture') {
         if (e.key === 'ArrowLeft') {
           navigateVMD('prev')
@@ -192,67 +175,76 @@ function App() {
         } else if (e.key === 'Escape') {
           exitVMDMode()
         }
-      } else if (navigationLevel === 'zone') {
-        if (e.key === 'Escape') {
-          exitZoneView()
-        } else if (selectedFixtureId && e.key === 'Enter') {
-          enterVMDMode(selectedFixtureId)
+      } else if (navigationLevel === 'store') {
+        // W = 이동 모드
+        if (e.key === 'w' || e.key === 'W') {
+          if (editMode !== 'edit') {
+            setEditMode('edit')
+          }
+          setTransformMode('move')
+        }
+        // E = 회전 모드
+        else if (e.key === 'e' || e.key === 'E') {
+          if (editMode !== 'edit') {
+            setEditMode('edit')
+          }
+          setTransformMode('rotate')
+        }
+        // Escape = 편집 모드 종료 또는 매장 나가기
+        else if (e.key === 'Escape') {
+          if (editMode === 'edit') {
+            setEditMode('view')
+          } else {
+            clearStore()
+          }
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [navigationLevel, selectedFixtureId, navigateVMD, exitVMDMode, exitZoneView, enterVMDMode])
+  }, [navigationLevel, editMode, navigateVMD, exitVMDMode, clearStore, setEditMode, setTransformMode])
 
-  // 현재 구역 내 매대들
-  const zoneFixtures = selectedZoneId
-    ? fixtures.filter((f) => f.zoneId === selectedZoneId)
-    : fixtures
-  const currentFixture = zoneFixtures[vmdFixtureIndex]
-
-  const isStoreLevel = navigationLevel === 'store'
-  const isZoneLevel = navigationLevel === 'zone'
+  const currentFixture = fixtures[vmdFixtureIndex]
   const isFixtureLevel = navigationLevel === 'fixture'
+
+  // 카메라 초기 위치 계산
+  const storeCenter = getStoreCenter()
+  const storeDimensions = getStoreDimensions()
+
+  const maxDim = Math.max(storeDimensions.width, storeDimensions.depth)
+  const fovRad = (50 * Math.PI) / 180
+  const initialCameraHeight = (maxDim / 2) / Math.tan(fovRad / 2) * 1.3
 
   return (
     <div className="w-full h-full bg-white">
       {/* 헤더 */}
-      <header className="absolute top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 z-10">
+      <header className="absolute top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 z-10">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-gray-900">Retail-X</h1>
-          <div className="h-4 w-px bg-gray-200" />
-          <NavigationBreadcrumb storeName="이마트 성수점" />
+          <button
+            onClick={clearStore}
+            className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+          >
+            Planogram
+          </button>
+          <div className="h-5 w-px bg-gray-200" />
+          <NavigationBreadcrumb storeName={currentStore?.meta.name || '매장'} />
         </div>
         <div className="flex items-center gap-3">
-          {isStoreLevel && (
-            <span
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                viewMode === 'TOP' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              {viewMode === 'TOP' ? '2D' : '3D'}
-            </span>
-          )}
-          {isZoneLevel && selectedFixtureId && (
-            <button
-              onClick={() => enterVMDMode(selectedFixtureId)}
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-full transition-colors"
-            >
-              상세보기
-            </button>
-          )}
+          <button
+            onClick={clearStore}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            매장 변경
+          </button>
         </div>
       </header>
-
-      {/* 뷰 컨트롤 버튼 (매장 레벨에서만) */}
-      {isStoreLevel && <ViewControls />}
 
       {/* VMD 컨트롤 (매대 레벨에서만) */}
       {isFixtureLevel && currentFixture && (
         <VMDControls
           currentIndex={vmdFixtureIndex}
-          totalCount={zoneFixtures.length}
+          totalCount={fixtures.length}
           fixtureName={currentFixture.name}
           onPrev={() => navigateVMD('prev')}
           onNext={() => navigateVMD('next')}
@@ -260,72 +252,43 @@ function App() {
         />
       )}
 
-      {/* 뒤로가기 버튼 (구역 레벨에서) */}
-      {isZoneLevel && (
-        <button
-          onClick={exitZoneView}
-          className="absolute left-6 top-20 z-20 flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all border border-gray-100 text-gray-700 hover:text-gray-900"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="text-sm font-medium">매장 전체</span>
-        </button>
-      )}
+      {/* 편집 모드 토글 (매장 레벨에서만) */}
+      <EditModeToggle />
+
+      {/* 매대 편집 패널 (편집 모드에서만) */}
+      <FixtureEditPanel />
+
+      {/* 미니맵 (VMD 모드에서만) */}
+      <Minimap />
 
       {/* 3D 캔버스 */}
       <div className="w-full h-full">
         <Canvas
           shadows
-          camera={{ position: [20, 20, 20], fov: 50 }}
-          style={{ background: '#fafafa' }}
-          onPointerMissed={() => {
-            if (isZoneLevel) {
-              useSceneStore.getState().setSelectedFixture(null)
-            }
+          camera={{
+            position: [storeCenter.x, initialCameraHeight, storeCenter.z],
+            fov: 50,
           }}
+          style={{ background: '#525252' }}
         >
-          <Scene />
+          <Suspense fallback={null}>
+            <Scene />
+          </Suspense>
         </Canvas>
       </div>
-
-      {/* 선택된 매대 정보 (구역 레벨에서) */}
-      {isZoneLevel && selectedFixtureId && (
-        <div className="absolute bottom-6 left-6 z-20">
-          <div className="px-4 py-3 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
-            <div className="text-xs text-gray-400 mb-1">선택된 매대</div>
-            <div className="text-sm font-semibold text-gray-900">
-              {fixtures.find((f) => f.id === selectedFixtureId)?.name}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">Enter 또는 상세보기 버튼 클릭</div>
-          </div>
-        </div>
-      )}
-
-      {/* 구역 정보 (구역 레벨에서) */}
-      {isZoneLevel && (
-        <div className="absolute bottom-6 right-6 z-20">
-          <div className="px-4 py-3 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
-            <div className="text-xs text-gray-400 mb-1">현재 구역</div>
-            <div className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{
-                  backgroundColor: zones.find((z) => z.id === selectedZoneId)?.color,
-                }}
-              />
-              <span className="text-sm font-semibold text-gray-900">
-                {zones.find((z) => z.id === selectedZoneId)?.name}
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              매대 {zoneFixtures.length}개
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
+}
+
+// 메인 앱
+function App() {
+  const { navigationLevel, currentStore } = useSceneStore()
+
+  if (navigationLevel === 'select' || !currentStore) {
+    return <StoreSelector />
+  }
+
+  return <StoreView />
 }
 
 export default App

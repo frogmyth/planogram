@@ -1,5 +1,8 @@
-import * as THREE from 'three'
-import { useMemo } from 'react'
+// ============================================
+// 벽 렌더러
+// 좌표계: Three.js Y-up (X=동서, Y=높이, Z=남북)
+// 단위: 미터 (실제 크기 100%)
+// ============================================
 
 interface Wall {
   id: string
@@ -12,9 +15,10 @@ interface Wall {
 interface WallRendererProps {
   walls: Wall[]
   color?: string
+  opacity?: number
 }
 
-function WallMesh({ wall, color = '#ffffff' }: { wall: Wall; color?: string }) {
+function WallMesh({ wall, color = '#ffffff', opacity = 1 }: { wall: Wall; color?: string; opacity?: number }) {
   const { start, end, height, thickness } = wall
 
   const length = Math.sqrt(
@@ -28,18 +32,24 @@ function WallMesh({ wall, color = '#ffffff' }: { wall: Wall; color?: string }) {
     <mesh
       position={[centerX, height / 2, centerZ]}
       rotation={[0, -angle, 0]}
+      castShadow
+      receiveShadow
     >
       <boxGeometry args={[length, height, thickness]} />
-      <meshStandardMaterial color={color} />
+      <meshStandardMaterial
+        color={color}
+        transparent={opacity < 1}
+        opacity={opacity}
+      />
     </mesh>
   )
 }
 
-export function WallRenderer({ walls, color = '#ffffff' }: WallRendererProps) {
+export function WallRenderer({ walls, color = '#ffffff', opacity = 1 }: WallRendererProps) {
   return (
     <group>
       {walls.map((wall) => (
-        <WallMesh key={wall.id} wall={wall} color={color} />
+        <WallMesh key={wall.id} wall={wall} color={color} opacity={opacity} />
       ))}
     </group>
   )
